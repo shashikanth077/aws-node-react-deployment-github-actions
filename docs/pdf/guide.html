@@ -1,0 +1,902 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Product List on AWS — End-to-End Deployment Guide</title>
+<style>
+@page { size: A4; margin: 15mm 14mm 16mm; }
+:root { --navy:#232f3e; --orange:#ff9900; --ink:#1f2933; --muted:#5b6670; --line:#d9dee3; }
+* { box-sizing: border-box; }
+body { font: 10.5pt/1.5 "Segoe UI", Arial, sans-serif; color: var(--ink); margin: 0; }
+h1 { font-size: 22pt; color: var(--navy); margin: 0 0 4mm; padding-bottom: 2mm; border-bottom: 3px solid var(--orange); page-break-before: always; }
+h1 .n { color: var(--orange); margin-right: 6px; }
+h1,h2,h3 { break-after: avoid; }
+h2 { font-size: 13pt; color: var(--navy); margin: 6mm 0 2mm; }
+h3 { font-size: 11pt; margin: 4mm 0 1mm; color: #2f6db5; }
+p { margin: 0 0 2.5mm; }
+code { font: 9pt Consolas, monospace; background: #f1f3f5; padding: 0 3px; border-radius: 3px; }
+pre { font: 8.4pt/1.4 Consolas, monospace; background: #1e2a38; color: #e8edf2; padding: 3mm 4mm; border-radius: 6px; white-space: pre-wrap; word-break: break-all; margin: 2mm 0 3mm; page-break-inside: avoid; }
+pre .c { color: #8fa3b8; }
+table { border-collapse: collapse; width: 100%; margin: 2mm 0 4mm; font-size: 9.5pt; page-break-inside: avoid; }
+th { background: var(--navy); color: #fff; text-align: left; padding: 1.5mm 2.5mm; }
+td { border-bottom: 1px solid var(--line); padding: 1.5mm 2.5mm; vertical-align: top; }
+tr:nth-child(even) td { background: #f8f9fa; }
+figure { margin: 3mm 0 4mm; page-break-inside: avoid; border: 1px solid var(--line); border-radius: 8px; padding: 3mm; background: #fcfcfd; }
+figure svg { width: 100%; height: auto; display: block; }
+figcaption { font-size: 9pt; color: var(--muted); margin-top: 2mm; text-align: center; }
+.box { border-left: 4px solid; border-radius: 4px; padding: 2mm 3mm; margin: 3mm 0; page-break-inside: avoid; font-size: 10pt; }
+.tip { background: #e6f6ea; border-color: #2e8b57; } .warn { background: #fff3e0; border-color: var(--orange); }
+.pit { background: #fdecea; border-color: #c0392b; } .why { background: #e8f1fb; border-color: #2f6db5; }
+.box b:first-child { text-transform: uppercase; font-size: 8.5pt; letter-spacing: .05em; margin-right: 4px; }
+ul, ol { margin: 0 0 3mm; padding-left: 6mm; } li { margin-bottom: 1mm; }
+/* cover */
+.cover { height: 255mm; background: linear-gradient(160deg,#232f3e 0%,#37475a 100%); color: #fff; border-radius: 10px; padding: 22mm 16mm; position: relative; }
+.cover h1 { color:#fff; border:0; page-break-before: avoid; font-size: 32pt; line-height: 1.15; margin-top: 18mm; }
+.cover .sub { font-size: 14pt; color: #ffc766; margin-bottom: 14mm; }
+.cover .tags span { display:inline-block; border:1px solid #ffc766; color:#ffc766; border-radius: 20px; padding: 1mm 4mm; margin: 0 2mm 2mm 0; font-size: 9.5pt; }
+.cover .foot { position:absolute; bottom: 14mm; left: 16mm; right: 16mm; font-size: 9.5pt; color:#c9d3dd; }
+.toc td:first-child { width: 12mm; color: var(--orange); font-weight: 700; }
+/* svg */
+svg text { font-family: "Segoe UI", Arial, sans-serif; fill: #232f3e; }
+.t { font-size: 13px; font-weight: 600; } .s { font-size: 11px; fill:#4a5560 !important; } .w { fill:#fff !important; }
+.b { fill:#fff; stroke:#232f3e; stroke-width:1.5; } .orange { fill:#fff3e0; stroke:#ff9900; stroke-width:1.8; }
+.blue { fill:#e8f1fb; stroke:#2f6db5; stroke-width:1.8; } .green { fill:#e6f6ea; stroke:#2e8b57; stroke-width:1.8; }
+.red { fill:#fdecea; stroke:#c0392b; stroke-width:1.8; } .purple { fill:#f1ebfa; stroke:#7a4fb5; stroke-width:1.8; }
+.gray { fill:#f1f3f5; stroke:#8a939b; stroke-width:1.5; } .navy { fill:#232f3e; stroke:#232f3e; }
+.vpc { fill:#f7fbff; stroke:#2f6db5; stroke-width:2; stroke-dasharray:7 4; }
+.pub { fill:#eaf6ee; stroke:#2e8b57; stroke-dasharray:4 3; } .prv { fill:#e8f1fb; stroke:#2f6db5; stroke-dasharray:4 3; } .dbs { fill:#f1ebfa; stroke:#7a4fb5; stroke-dasharray:4 3; }
+.a { stroke:#232f3e; stroke-width:1.8; fill:none; marker-end:url(#ar); } .ad { stroke:#6b7782; stroke-width:1.5; fill:none; stroke-dasharray:5 4; marker-end:url(#ar); }
+.ao { stroke:#ff9900; stroke-width:2.2; fill:none; marker-end:url(#aro); } .ln { stroke:#8a939b; stroke-width:1.5; stroke-dasharray:3 4; }
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute"><defs>
+  <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#232f3e"/></marker>
+  <marker id="aro" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#ff9900"/></marker>
+</defs></svg>
+
+<!-- ================= COVER ================= -->
+<div class="cover">
+  <div class="tags"><span>React + TypeScript</span><span>Node.js 22</span><span>Docker</span><span>ECR</span><span>ECS Fargate</span><span>ALB</span><span>RDS MySQL</span><span>S3 + CloudFront</span><span>CloudWatch</span></div>
+  <h1>Product List on AWS<br>End-to-End Deployment Guide</h1>
+  <div class="sub">From <code style="background:#37475a;color:#fff">git clone</code> to a highly-available, monitored, 2-AZ production-style stack</div>
+  <p style="max-width:140mm;color:#e3e9ef">A hands-on, picture-first walkthrough for developers who know React and Node.js but are new to AWS. Every service is explained the same way:
+  <b>what it is → why the app needs it → how to configure it → how traffic flows → how to verify → common mistakes → how to troubleshoot.</b></p>
+  <div class="foot">Repository: shashikanth077/aws-node-react-deployment-github-actions &nbsp;·&nbsp; Deployed and verified live: eu-north-1 (Stockholm), 2 October 2026<br>
+  Chapters 1–13 teach the design; <b>chapter 14 is the as-built record</b> of the real deployment: resource IDs, the verification evidence, the problems we hit and how we fixed them. Optional parts (custom domain, CloudWatch alarms/SNS, GitHub Actions) are documented but were not executed.</div>
+</div>
+
+<!-- ================= TOC ================= -->
+<h1 style="page-break-before:always"><span class="n">≡</span>Contents</h1>
+<table class="toc">
+<tr><td>1</td><td>The big picture — what we build and how a request travels</td></tr>
+<tr><td>2</td><td>The application — React, Node API, MySQL, images</td></tr>
+<tr><td>3</td><td>Run it locally first</td></tr>
+<tr><td>4</td><td>Networking — VPC, subnets, route tables, IGW, NAT, security groups</td></tr>
+<tr><td>5</td><td>RDS MySQL and Secrets Manager — database without hard-coded passwords</td></tr>
+<tr><td>6</td><td>S3 — product images and the React build</td></tr>
+<tr><td>7</td><td>Docker image and ECR</td></tr>
+<tr><td>8</td><td>ECS Fargate — cluster, task definition, service, 2 tasks</td></tr>
+<tr><td>9</td><td>Application Load Balancer and target group</td></tr>
+<tr><td>10</td><td>CloudFront — HTTPS, one site for React + API + images (optional custom domain)</td></tr>
+<tr><td>11</td><td>CloudWatch — logs, metrics, alarms</td></tr>
+<tr><td>12</td><td>Troubleshooting map</td></tr>
+<tr><td>13</td><td>Cost, teardown and cheat-sheet</td></tr>
+<tr><td>14</td><td><b>As-built: our live deployment</b> — real resources, verification evidence, problems solved, one-page runbook</td></tr>
+</table>
+
+<h2>The build order (and rough running cost)</h2>
+<figure>
+<svg viewBox="0 0 760 170">
+  <g class="t">
+  <rect class="blue" x="8" y="20" width="76" height="62" rx="8"/><text x="46" y="46" text-anchor="middle">1 Local</text><text class="s" x="46" y="64" text-anchor="middle">compose</text>
+  <rect class="green" x="92" y="20" width="76" height="62" rx="8"/><text x="130" y="46" text-anchor="middle">2 VPC</text><text class="s" x="130" y="64" text-anchor="middle">+ SGs</text>
+  <rect class="purple" x="176" y="20" width="76" height="62" rx="8"/><text x="214" y="46" text-anchor="middle">3 RDS</text><text class="s" x="214" y="64" text-anchor="middle">+ secret</text>
+  <rect class="orange" x="260" y="20" width="76" height="62" rx="8"/><text x="298" y="46" text-anchor="middle">4 S3</text><text class="s" x="298" y="64" text-anchor="middle">images</text>
+  <rect class="blue" x="344" y="20" width="76" height="62" rx="8"/><text x="382" y="46" text-anchor="middle">5 Docker</text><text class="s" x="382" y="64" text-anchor="middle">+ ECR</text>
+  <rect class="green" x="428" y="20" width="76" height="62" rx="8"/><text x="466" y="46" text-anchor="middle">6 ECS</text><text class="s" x="466" y="64" text-anchor="middle">+ ALB</text>
+  <rect class="purple" x="512" y="20" width="76" height="62" rx="8"/><text x="550" y="46" text-anchor="middle">7 CDN</text><text class="s" x="550" y="64" text-anchor="middle">CloudFront</text>
+  <rect class="orange" x="596" y="20" width="76" height="62" rx="8"/><text x="634" y="46" text-anchor="middle">8 Logs</text><text class="s" x="634" y="64" text-anchor="middle">CloudWatch</text>
+  <rect class="red" x="680" y="20" width="72" height="62" rx="8"/><text x="716" y="46" text-anchor="middle">9 Delete</text><text class="s" x="716" y="64" text-anchor="middle">teardown</text>
+  </g>
+  <path class="a" d="M84 51H92M168 51H176M252 51H260M336 51H344M420 51H428M504 51H512M588 51H596M672 51H680"/>
+  <text class="s" x="130" y="110" text-anchor="middle">NAT ≈ $1.1/day</text><path class="ln" d="M130 86V98"/>
+  <text class="s" x="466" y="110" text-anchor="middle">Fargate+ALB ≈ $1.2/day</text><path class="ln" d="M466 86V98"/>
+  <text class="s" x="214" y="110" text-anchor="middle">free tier*</text>
+  <text class="s" x="382" y="110" text-anchor="middle">free tier*</text>
+  <text class="s" x="380" y="150" text-anchor="middle">Whole stack ≈ $2–3 per day while running — build in one or two sittings, then tear down (step 9).  *older-account Free Tier; check Billing → Free Tier.</text>
+</svg>
+<figcaption>Figure 0.1 — Follow the steps in dependency order: each one needs the previous one.</figcaption>
+</figure>
+
+<!-- ================= 1 BIG PICTURE ================= -->
+<h1><span class="n">1</span>The big picture</h1>
+<p>We deploy a deliberately tiny <b>Product List</b> app on a realistic architecture. The app is small so the <i>infrastructure</i> is the lesson: private networking, two Availability Zones, a load balancer, containers, a managed database, secrets, a CDN and monitoring.</p>
+
+<figure>
+<svg viewBox="0 0 760 500">
+  <rect class="navy" x="320" y="8" width="120" height="34" rx="17"/><text class="t w" x="380" y="30" text-anchor="middle">User / Browser</text>
+  <rect class="purple" x="290" y="70" width="180" height="44" rx="8"/><text class="t" x="380" y="90" text-anchor="middle">CloudFront (HTTPS)</text><text class="s" x="380" y="105" text-anchor="middle">custom domain optional</text>
+  <path class="a" d="M380 42V70"/>
+  <rect class="orange" x="30" y="165" width="190" height="80" rx="8"/><text class="t" x="125" y="190" text-anchor="middle">S3 bucket (private)</text><text class="s" x="125" y="208" text-anchor="middle">index.html + JS/CSS (React)</text><text class="s" x="125" y="223" text-anchor="middle">images/*.svg (product pictures)</text>
+  <path class="a" d="M300 105L150 165"/><text class="s" x="60" y="130">/  and  /images/*</text>
+  <rect class="vpc" x="262" y="150" width="480" height="335" rx="12"/><text class="t" x="276" y="170" style="fill:#2f6db5">VPC 10.0.0.0/16</text>
+  <rect class="pub" x="276" y="180" width="452" height="70" rx="8"/><text class="s" x="720" y="196" text-anchor="end">public subnets (AZ-A + AZ-B)</text>
+  <rect class="green" x="300" y="202" width="200" height="40" rx="8"/><text class="t" x="400" y="226" text-anchor="middle">ALB  :80 (:443*)  — ALB-SG</text>
+  <rect class="gray" x="570" y="202" width="130" height="40" rx="8"/><text class="t" x="635" y="226" text-anchor="middle">NAT Gateway</text>
+  <path class="a" d="M400 114V202"/><text class="s" x="410" y="160">/api/*</text>
+  <rect class="prv" x="276" y="262" width="452" height="100" rx="8"/><text class="s" x="720" y="278" text-anchor="end">private app subnets</text>
+  <rect class="blue" x="300" y="290" width="150" height="56" rx="8"/><text class="t" x="375" y="314" text-anchor="middle">Task  AZ-A</text><text class="s" x="375" y="332" text-anchor="middle">Node.js :3000</text>
+  <rect class="blue" x="480" y="290" width="150" height="56" rx="8"/><text class="t" x="555" y="314" text-anchor="middle">Task  AZ-B</text><text class="s" x="555" y="332" text-anchor="middle">Node.js :3000</text>
+  <path class="a" d="M370 242L375 290"/><path class="a" d="M430 242L540 290"/>
+  <rect class="dbs" x="276" y="374" width="452" height="100" rx="8"/><text class="s" x="720" y="390" text-anchor="end">private DB subnets — no internet route</text>
+  <rect class="purple" x="400" y="404" width="210" height="56" rx="8"/><text class="t" x="505" y="428" text-anchor="middle">RDS MySQL  :3306</text><text class="s" x="505" y="446" text-anchor="middle">table: products (stores S3 key only)</text>
+  <path class="a" d="M375 346L450 404"/><path class="a" d="M555 346L545 404"/>
+  <path class="ad" d="M300 318H225"/><text class="s" x="232" y="310">via NAT</text>
+  <rect class="gray" x="20" y="275" width="200" height="40" rx="8" style="display:none"/>
+  <rect class="red" x="20" y="272" width="200" height="38" rx="8"/><text class="t" x="120" y="296" text-anchor="middle">ECR — Docker image</text>
+  <rect class="red" x="20" y="320" width="200" height="38" rx="8"/><text class="t" x="120" y="344" text-anchor="middle">Secrets Manager — DB login</text>
+  <rect class="red" x="20" y="368" width="200" height="38" rx="8"/><text class="t" x="120" y="392" text-anchor="middle">CloudWatch — logs + metrics</text>
+  <text class="s" x="20" y="430">* ALB :443 needs your own domain</text>
+  <text class="s" x="20" y="445">  + ACM certificate (chapter 10).</text>
+</svg>
+<figcaption>Figure 1.1 — Production-style architecture. Only CloudFront and the ALB face the internet; Node and MySQL are private.</figcaption>
+</figure>
+
+<h2>Deployment flow</h2>
+<figure>
+<svg viewBox="0 0 760 130">
+  <rect class="gray" x="6" y="30" width="100" height="50" rx="8"/><text class="t" x="56" y="60" text-anchor="middle">Source code</text>
+  <rect class="blue" x="130" y="30" width="110" height="50" rx="8"/><text class="t" x="185" y="52" text-anchor="middle">docker build</text><text class="s" x="185" y="68" text-anchor="middle">image 1.0.0</text>
+  <rect class="red" x="264" y="30" width="100" height="50" rx="8"/><text class="t" x="314" y="60" text-anchor="middle">ECR</text>
+  <rect class="orange" x="388" y="30" width="130" height="50" rx="8"/><text class="t" x="453" y="52" text-anchor="middle">Task Definition</text><text class="s" x="453" y="68" text-anchor="middle">revision N</text>
+  <rect class="green" x="542" y="30" width="100" height="50" rx="8"/><text class="t" x="592" y="52" text-anchor="middle">ECS Service</text><text class="s" x="592" y="68" text-anchor="middle">desired = 2</text>
+  <rect class="blue" x="666" y="30" width="88" height="50" rx="8"/><text class="t" x="710" y="52" text-anchor="middle">Fargate</text><text class="s" x="710" y="68" text-anchor="middle">2 tasks</text>
+  <path class="a" d="M106 55H130M240 55H264M364 55H388M518 55H542M642 55H666"/>
+  <text class="s" x="185" y="105" text-anchor="middle">docker build</text><text class="s" x="314" y="105" text-anchor="middle">docker push</text><text class="s" x="453" y="105" text-anchor="middle">register-task-definition</text><text class="s" x="610" y="105" text-anchor="middle">update-service (rolling)</text>
+</svg>
+<figcaption>Figure 1.2 — Code becomes running containers: build → push → new task-definition revision → rolling deployment.</figcaption>
+</figure>
+
+<h2>Names used in every command</h2>
+<table>
+<tr><th>Thing</th><th>Name</th></tr>
+<tr><td>VPC</td><td><code>product-vpc</code> 10.0.0.0/16</td></tr>
+<tr><td>Subnets</td><td>public-a 10.0.1.0/24 · public-b 10.0.3.0/24 · private-app-a 10.0.2.0/24 · private-app-b 10.0.4.0/24 · private-db-a 10.0.5.0/24 · private-db-b 10.0.6.0/24</td></tr>
+<tr><td>Security groups</td><td><code>alb-sg</code> · <code>ecs-sg</code> · <code>rds-sg</code></td></tr>
+<tr><td>RDS</td><td><code>product-db</code>, database <code>productsdb</code>, subnet group <code>product-db-subnet-group</code></td></tr>
+<tr><td>S3 / ECR</td><td><code>product-app-&lt;ACCOUNT_ID&gt;</code> / <code>product-api</code></td></tr>
+<tr><td>ECS</td><td>cluster <code>product-cluster</code> · task family <code>product-api</code> · service <code>product-api-service</code></td></tr>
+<tr><td>Load balancer</td><td><code>product-alb</code> · target group <code>product-api-tg</code></td></tr>
+<tr><td>IAM roles / logs</td><td><code>productApiTaskExecutionRole</code> · <code>productApiTaskRole</code> / <code>/ecs/product-api</code></td></tr>
+</table>
+
+<!-- ================= 2 APP ================= -->
+<h1><span class="n">2</span>The application</h1>
+<table>
+<tr><th>Layer</th><th>Tech</th><th>Key points</th></tr>
+<tr><td>Frontend</td><td>React 19 + TypeScript + Vite</td><td>Fetches <code>/api/products</code> (same origin → no CORS). Loading, error + retry states. Card: image, name, price, description.</td></tr>
+<tr><td>Backend</td><td>Node 22 + Express</td><td><code>GET /api/products</code>, <code>GET /health</code> (liveness for ALB), <code>GET /health/ready</code> (checks DB). Env-var config, JSON logs, central error handler, graceful SIGTERM shutdown.</td></tr>
+<tr><td>Database</td><td>MySQL 8 (RDS)</td><td><code>products</code> table, 5 seed rows, connection pool (<code>mysql2</code>, size 10/task, TLS with RDS CA bundle).</td></tr>
+<tr><td>Images</td><td>S3 (private)</td><td>DB stores only the <b>key</b> (<code>images/lamp.svg</code>); API builds the URL from <code>IMAGE_BASE_URL</code>.</td></tr>
+</table>
+
+<figure>
+<svg viewBox="0 0 760 210">
+  <rect class="blue" x="10" y="20" width="170" height="90" rx="8"/><text class="t" x="95" y="46" text-anchor="middle">React page</text><text class="s" x="95" y="66" text-anchor="middle">fetch("/api/products")</text><text class="s" x="95" y="82" text-anchor="middle">&lt;img src={imageUrl}&gt;</text>
+  <rect class="green" x="250" y="20" width="200" height="90" rx="8"/><text class="t" x="350" y="46" text-anchor="middle">Express API</text><text class="s" x="350" y="66" text-anchor="middle">routes/products.js</text><text class="s" x="350" y="82" text-anchor="middle">maps image_key → imageUrl</text>
+  <rect class="purple" x="520" y="20" width="170" height="90" rx="8"/><text class="t" x="605" y="46" text-anchor="middle">MySQL products</text><text class="s" x="605" y="66" text-anchor="middle">id, name, description,</text><text class="s" x="605" y="82" text-anchor="middle">price, image_key</text>
+  <path class="a" d="M180 55H250"/><path class="a" d="M450 55H520"/><path class="ad" d="M520 90H450"/><path class="ad" d="M250 90H180"/>
+  <rect class="orange" x="10" y="150" width="170" height="44" rx="8"/><text class="t" x="95" y="176" text-anchor="middle">S3 images/*.svg</text>
+  <path class="ad" d="M95 110V150" style="marker-end:none;marker-start:url(#ar)"/>
+  <text class="s" x="240" y="170">JSON:  {"products":[{ id, name, description, price, imageUrl }]}</text>
+  <text class="s" x="240" y="188">Browser downloads images directly from CloudFront/S3, never through Node.</text>
+</svg>
+<figcaption>Figure 2.1 — Data flow inside the app. Images bypass the API entirely.</figcaption>
+</figure>
+
+<div class="why"><b>Why</b> /health does not touch the database</div>
+<div class="box why">If the ALB health check queried MySQL and the DB hiccupped, the ALB would mark <i>both</i> tasks unhealthy and take the whole site down. Liveness (<code>/health</code>) answers "is Node alive?"; readiness (<code>/health/ready</code>) answers "can it reach the DB?" and is for humans and debugging.</div>
+
+<h3>Repository layout</h3>
+<pre>backend/    Dockerfile · db/schema.sql + seed.sql · src/{config,logger,db,app,server}.js · routes/ · scripts/init-db.js
+frontend/   Vite + React + TS (src/App.tsx, api.ts, components/ProductCard.tsx)
+assets/     images/*.svg  → uploaded to S3
+infra/      task-definition.json · IAM policies · ecr-lifecycle-policy.json · GitHub Actions example
+scripts/    render-task-def.sh · render-task-role-policy.sh
+docs/       the markdown guide (this PDF is its illustrated summary)</pre>
+
+<!-- ================= 3 LOCAL ================= -->
+<h1><span class="n">3</span>Run it locally first</h1>
+<p>Never debug AWS and your code at the same time. Prove the app works on your laptop; afterwards the only new variable is AWS.</p>
+<figure>
+<svg viewBox="0 0 760 120">
+  <rect class="blue" x="10" y="30" width="150" height="56" rx="8"/><text class="t" x="85" y="56" text-anchor="middle">Browser</text><text class="s" x="85" y="72" text-anchor="middle">localhost:5173</text>
+  <rect class="blue" x="200" y="30" width="170" height="56" rx="8"/><text class="t" x="285" y="52" text-anchor="middle">Vite dev server</text><text class="s" x="285" y="70" text-anchor="middle">proxy /api · serves /images</text>
+  <rect class="green" x="410" y="30" width="150" height="56" rx="8"/><text class="t" x="485" y="52" text-anchor="middle">Node API (Docker)</text><text class="s" x="485" y="70" text-anchor="middle">:3000</text>
+  <rect class="purple" x="600" y="30" width="150" height="56" rx="8"/><text class="t" x="675" y="52" text-anchor="middle">MySQL (Docker)</text><text class="s" x="675" y="70" text-anchor="middle">:3306</text>
+  <path class="a" d="M160 58H200M370 58H410M560 58H600"/>
+</svg>
+<figcaption>Figure 3.1 — Local stack: <code>docker compose</code> for MySQL + API, <code>npm run dev</code> for React.</figcaption>
+</figure>
+<pre>docker compose up -d --build
+docker compose run --rm api npm run db:init          <span class="c"># → {"msg":"db_seeded"}</span>
+curl -s localhost:3000/health                         <span class="c"># {"status":"ok"}</span>
+curl -s localhost:3000/api/products | head -c 300
+cd frontend &amp;&amp; npm install &amp;&amp; npm run dev            <span class="c"># http://localhost:5173</span></pre>
+<table>
+<tr><th>Variable</th><th>Local</th><th>In AWS</th></tr>
+<tr><td><code>DB_HOST / DB_NAME</code></td><td>db / productsdb</td><td>RDS endpoint / productsdb</td></tr>
+<tr><td><code>DB_USER + DB_PASSWORD</code></td><td>root + dev password</td><td><b>not set</b></td></tr>
+<tr><td><code>DB_SECRET_ARN</code></td><td>—</td><td>Secrets Manager ARN</td></tr>
+<tr><td><code>DB_SSL</code></td><td>false</td><td>true (verified with RDS CA bundle)</td></tr>
+<tr><td><code>IMAGE_BASE_URL</code></td><td>empty</td><td>empty (same-origin via CloudFront)</td></tr>
+</table>
+<div class="box tip"><b>Tip</b> Stop the API and reload the page: you see the error state with a Try-again button — the same behaviour you will see if anything in AWS breaks.</div>
+
+<!-- ================= 4 NETWORK ================= -->
+<h1><span class="n">4</span>Networking</h1>
+<h2>Mental model in plain words</h2>
+<table>
+<tr><th>Piece</th><th>Think of it as</th></tr>
+<tr><td><b>VPC</b></td><td>Your own private data centre inside AWS (10.0.0.0/16).</td></tr>
+<tr><td><b>Subnet</b></td><td>A room, pinned to <i>one</i> Availability Zone (a physically separate building).</td></tr>
+<tr><td><b>Internet Gateway (IGW)</b></td><td>The front door to the street. No IGW → no internet in or out.</td></tr>
+<tr><td><b>Route table</b></td><td>Signposts: "to reach X, go through Y". A subnet is <i>public</i> only because its signpost says <code>0.0.0.0/0 → IGW</code>.</td></tr>
+<tr><td><b>NAT Gateway</b></td><td>A one-way mail slot. Private tasks can send out (pull image, fetch secret) and get replies; strangers cannot start a conversation. Lives in a <i>public</i> subnet.</td></tr>
+<tr><td><b>Security group</b></td><td>A firewall around each resource; stateful; rules can name another security group as the source.</td></tr>
+</table>
+
+<figure>
+<svg viewBox="0 0 760 470">
+  <rect class="gray" x="300" y="6" width="160" height="30" rx="15"/><text class="t" x="380" y="26" text-anchor="middle">Internet</text>
+  <rect class="orange" x="310" y="58" width="140" height="32" rx="8"/><text class="t" x="380" y="79" text-anchor="middle">Internet Gateway</text>
+  <path class="a" d="M380 36V58" style="marker-start:url(#ar)"/>
+  <rect class="vpc" x="10" y="100" width="740" height="362" rx="12"/><text class="t" x="24" y="120" style="fill:#2f6db5">VPC 10.0.0.0/16</text>
+  <text class="t" x="190" y="140" text-anchor="middle">AZ-A</text><text class="t" x="570" y="140" text-anchor="middle">AZ-B</text>
+  <path class="ln" d="M380 128V455"/>
+  <rect class="pub" x="30" y="150" width="330" height="86" rx="8"/><text class="s" x="40" y="168">public-a  10.0.1.0/24     route: 0.0.0.0/0 → IGW</text>
+  <rect class="green" x="48" y="178" width="130" height="44" rx="6"/><text class="t" x="113" y="205" text-anchor="middle">ALB node</text>
+  <rect class="gray" x="200" y="178" width="140" height="44" rx="6"/><text class="t" x="270" y="205" text-anchor="middle">NAT Gateway + EIP</text>
+  <rect class="pub" x="400" y="150" width="330" height="86" rx="8"/><text class="s" x="410" y="168">public-b  10.0.3.0/24     route: 0.0.0.0/0 → IGW</text>
+  <rect class="green" x="418" y="178" width="130" height="44" rx="6"/><text class="t" x="483" y="205" text-anchor="middle">ALB node</text>
+  <rect class="prv" x="30" y="256" width="330" height="86" rx="8"/><text class="s" x="40" y="274">private-app-a  10.0.2.0/24     route: 0.0.0.0/0 → NAT</text>
+  <rect class="blue" x="48" y="284" width="294" height="44" rx="6"/><text class="t" x="195" y="311" text-anchor="middle">ECS task (Node :3000) — private IP only</text>
+  <rect class="prv" x="400" y="256" width="330" height="86" rx="8"/><text class="s" x="410" y="274">private-app-b  10.0.4.0/24     route: 0.0.0.0/0 → NAT</text>
+  <rect class="blue" x="418" y="284" width="294" height="44" rx="6"/><text class="t" x="565" y="311" text-anchor="middle">ECS task (Node :3000) — private IP only</text>
+  <rect class="dbs" x="30" y="362" width="330" height="86" rx="8"/><text class="s" x="40" y="380">private-db-a  10.0.5.0/24     route: local only</text>
+  <rect class="purple" x="48" y="390" width="294" height="44" rx="6"/><text class="t" x="195" y="417" text-anchor="middle">RDS MySQL (primary)</text>
+  <rect class="dbs" x="400" y="362" width="330" height="86" rx="8"/><text class="s" x="410" y="380">private-db-b  10.0.6.0/24     route: local only</text>
+  <rect class="gray" x="418" y="390" width="294" height="44" rx="6" style="stroke-dasharray:4 3"/><text class="s" x="565" y="417" text-anchor="middle">(Multi-AZ standby goes here later)</text>
+  <path class="a" d="M113 178L340 90" style="display:none"/>
+  <path class="ao" d="M270 256V222" style="display:none"/>
+</svg>
+<figcaption>Figure 4.1 — Three tiers × two AZs. The DB tier has no route to the internet at all.</figcaption>
+</figure>
+
+<h3>Route tables</h3>
+<table>
+<tr><th>Table</th><th>Attached to</th><th>Routes</th></tr>
+<tr><td>product-public-rt</td><td>public-a, public-b</td><td>10.0.0.0/16 → local · <b>0.0.0.0/0 → IGW</b></td></tr>
+<tr><td>product-private-rt</td><td>private-app-a/b</td><td>10.0.0.0/16 → local · <b>0.0.0.0/0 → NAT</b> · S3 prefix list → gateway endpoint (free)</td></tr>
+<tr><td>product-db-rt</td><td>private-db-a/b</td><td>10.0.0.0/16 → local <i>only</i></td></tr>
+</table>
+
+<h2>Security groups — the chain</h2>
+<figure>
+<svg viewBox="0 0 760 200">
+  <rect class="gray" x="6" y="60" width="110" height="60" rx="8"/><text class="t" x="61" y="88" text-anchor="middle">Internet</text><text class="s" x="61" y="106" text-anchor="middle">anyone</text>
+  <rect class="green" x="190" y="50" width="150" height="80" rx="8"/><text class="t" x="265" y="78" text-anchor="middle">ALB-SG</text><text class="s" x="265" y="96" text-anchor="middle">in: 80 (443*) from</text><text class="s" x="265" y="111" text-anchor="middle">0.0.0.0/0</text>
+  <rect class="blue" x="420" y="50" width="150" height="80" rx="8"/><text class="t" x="495" y="78" text-anchor="middle">ECS-SG</text><text class="s" x="495" y="96" text-anchor="middle">in: 3000 from</text><text class="s" x="495" y="111" text-anchor="middle">ALB-SG only</text>
+  <rect class="purple" x="640" y="50" width="114" height="80" rx="8" /><text class="t" x="697" y="78" text-anchor="middle">RDS-SG</text><text class="s" x="697" y="96" text-anchor="middle">in: 3306 from</text><text class="s" x="697" y="111" text-anchor="middle">ECS-SG only</text>
+  <path class="a" d="M116 90H190"/><path class="a" d="M340 90H420"/><path class="a" d="M570 90H640"/>
+  <text class="s" x="153" y="82" text-anchor="middle">:80</text><text class="s" x="380" y="82" text-anchor="middle">:3000</text><text class="s" x="605" y="82" text-anchor="middle">:3306</text>
+  <text class="s" x="380" y="170" text-anchor="middle">Rules reference security groups, not IPs — they keep working while Fargate tasks come and go.</text>
+</svg>
+<figcaption>Figure 4.2 — Each hop only accepts traffic from the hop before it.</figcaption>
+</figure>
+<div class="box why"><b>Why not expose 3000 or 3306?</b> Port 3306 open to the world is how databases get scanned, brute-forced and ransomed within minutes — only Node needs MySQL, so only Node's SG may connect. Port 3000 open would let people bypass the load balancer (no health routing, no central logging/TLS/WAF); the tasks have no public IP anyway. One controlled front door: the ALB.</div>
+
+<h3>Create it (console)</h3>
+<p>VPC → <b>Create VPC → "VPC and more"</b>: name <code>product</code>, 10.0.0.0/16, 2 AZs, 2 public + 2 private subnets with the CIDRs above, <b>NAT gateways: In 1 AZ</b>, VPC endpoint <b>S3 Gateway</b>, DNS hostnames on. Then add subnets <code>private-db-a/b</code> (10.0.5.0/24, 10.0.6.0/24) with a route table that has only the local route. Create <code>alb-sg</code> → <code>ecs-sg</code> → <code>rds-sg</code> in that order.</p>
+<pre>export VPC_ID=$(aws ec2 describe-vpcs --filters Name=tag:Name,Values=product-vpc --query 'Vpcs[0].VpcId' --output text)
+aws ec2 describe-subnets --filters Name=vpc-id,Values=$VPC_ID \
+  --query 'Subnets[].[Tags[?Key==`Name`]|[0].Value,AvailabilityZone,CidrBlock]' --output table</pre>
+<div class="box pit"><b>Pitfalls</b> NAT placed in a private subnet · no <code>0.0.0.0/0 → NAT</code> on the private table (tasks time out pulling images) · CIDR ranges instead of SG references · opening 3306 "temporarily" · DB subnets in one AZ · wrong console region.</div>
+<div class="box tip"><b>Verify</b> VPC → Resource map: public subnets → IGW route; private-app → NAT route; DB subnets → no 0.0.0.0/0; NAT is "Available" and in a <i>public</i> subnet. Stuck? <b>Reachability Analyzer</b> names the exact blocking rule.</div>
+
+<!-- ================= 5 RDS & SECRETS ================= -->
+<h1><span class="n">5</span>RDS MySQL + Secrets Manager</h1>
+<p><b>RDS</b> is a managed MySQL: AWS patches, backs up and replaces hardware. <b>Why we need it:</b> containers are disposable; state must live outside them so both tasks read the same rows.</p>
+<table>
+<tr><th>Setting</th><th>Value</th></tr>
+<tr><td>Engine / template</td><td>MySQL 8.x (our build got 8.4.9) · Free tier · single DB instance</td></tr>
+<tr><td>Identifier / class</td><td><code>product-db</code> · <code>db.t3.micro</code> (or t4g.micro) · 20 GiB, no autoscaling</td></tr>
+<tr><td>Credentials</td><td><b>Managed in AWS Secrets Manager</b> (master user <code>admin</code>)</td></tr>
+<tr><td>Network</td><td><code>product-vpc</code> · subnet group on the two DB subnets · <b>Public access: No</b> · SG <code>rds-sg</code></td></tr>
+<tr><td>Initial database</td><td><code>productsdb</code></td></tr>
+<tr><td>Extras</td><td>Backups 1 day · Performance Insights and Enhanced Monitoring off</td></tr>
+</table>
+<pre>aws rds describe-db-instances --db-instance-identifier product-db \
+  --query 'DBInstances[0].[DBInstanceStatus,Endpoint.Address,PubliclyAccessible,MultiAZ,MasterUserSecret.SecretArn]' --output text
+export DB_HOST=...   export DB_SECRET_ARN=...        <span class="c"># from the output above</span></pre>
+
+<h2>How Node gets the password — two IAM roles</h2>
+<table>
+<tr><th>Role</th><th>Used by</th><th>For</th><th>Permissions</th></tr>
+<tr><td><b>Task execution role</b><br><code>productApiTaskExecutionRole</code></td><td>The ECS agent, before your code starts</td><td>Pull image from ECR, write log streams</td><td>AWS-managed <code>AmazonECSTaskExecutionRolePolicy</code></td></tr>
+<tr><td><b>Task role</b><br><code>productApiTaskRole</code></td><td>Your Node code, while running</td><td>Any AWS API the app calls</td><td>Inline: <code>secretsmanager:GetSecretValue</code> on <i>this one secret ARN</i></td></tr>
+</table>
+<figure>
+<svg viewBox="0 0 760 330">
+  <g class="t"><text x="90" y="24" text-anchor="middle">ECS agent</text><text x="90" y="40" class="s" text-anchor="middle">(execution role)</text>
+  <text x="290" y="24" text-anchor="middle">Node app</text><text x="290" y="40" class="s" text-anchor="middle">(task role)</text>
+  <text x="500" y="24" text-anchor="middle">Secrets Manager</text>
+  <text x="680" y="24" text-anchor="middle">RDS MySQL</text></g>
+  <path class="ln" d="M90 50V320M290 50V320M500 50V320M680 50V320"/>
+  <path class="a" d="M90 80H280"/><text class="s" x="100" y="72">1  pulls image, starts container (+ log stream)</text>
+  <path class="a" d="M290 125H300" style="display:none"/>
+  <text class="s" x="300" y="112">2  SDK asks the task credentials endpoint for temporary keys</text>
+  <path class="ad" d="M290 128C340 128 340 148 290 148"/><text class="s" x="350" y="142">no access keys in code or config</text>
+  <path class="a" d="M290 190H500"/><text class="s" x="298" y="182">3  GetSecretValue(DB_SECRET_ARN)  — via NAT</text>
+  <path class="ad" d="M500 225H290"/><text class="s" x="300" y="217">4  IAM allows → {"username","password"}</text>
+  <path class="a" d="M290 270H680"/><text class="s" x="298" y="262">5  mysql2 pool connects (TLS, port 3306)</text>
+  <rect class="green" x="200" y="290" width="360" height="28" rx="6"/><text class="s" x="380" y="309" text-anchor="middle" style="fill:#1e6b42">If the secret rotates: ER_ACCESS_DENIED → re-read secret → rebuild pool</text>
+</svg>
+<figcaption>Figure 5.1 — Credentials flow. The password never appears in Git, the image, the task definition or the logs.</figcaption>
+</figure>
+<div class="box why"><b>Why not inject it as an ECS "secret" env var?</b> You can (<code>"secrets":[{"name":"DB_PASSWORD","valueFrom":"&lt;arn&gt;:password::"}]</code>, needs the <i>execution</i> role to read it). But it is read once at task start, and RDS-managed secrets rotate every 7 days — running tasks would keep a stale password. Reading it in code with the task role self-heals and teaches the pattern you will reuse for S3/SQS.</div>
+<pre>aws iam create-role --role-name productApiTaskExecutionRole --assume-role-policy-document file://infra/ecs-tasks-trust-policy.json
+aws iam attach-role-policy --role-name productApiTaskExecutionRole --policy-arn arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy
+aws iam create-role --role-name productApiTaskRole --assume-role-policy-document file://infra/ecs-tasks-trust-policy.json
+bash scripts/render-task-role-policy.sh &gt; infra/task-role-policy.rendered.json
+aws iam put-role-policy --role-name productApiTaskRole --policy-name read-db-secret --policy-document file://infra/task-role-policy.rendered.json</pre>
+<div class="box pit"><b>Pitfalls</b> Public access = Yes · forgetting the initial DB name (<code>Unknown database</code>) · <code>secretsmanager:*</code> on <code>*</code> · password in <code>environment</code> · no NAT/endpoint, so Secrets Manager is unreachable · fixing the wrong role (error from Node → <i>task</i> role; task fails to start → <i>execution</i> role).</div>
+
+<!-- ================= 6 S3 ================= -->
+<h1><span class="n">6</span>S3 — images and the React build</h1>
+<p><b>What:</b> object storage; a file is addressed by a <i>key</i> such as <code>images/headphones.svg</code>. <b>Why:</b> images do not belong in MySQL (bloat, slow) or in the Docker image (every picture change would need a redeploy). The row stores the key; S3 stores the bytes; browsers fetch them via CloudFront so Node never serves an image.</p>
+<figure>
+<svg viewBox="0 0 760 150">
+  <rect class="purple" x="10" y="20" width="200" height="70" rx="8"/><text class="t" x="110" y="46" text-anchor="middle">DB row</text><text class="s" x="110" y="66" text-anchor="middle">image_key = images/lamp.svg</text>
+  <rect class="green" x="270" y="20" width="200" height="70" rx="8"/><text class="t" x="370" y="46" text-anchor="middle">API builds URL</text><text class="s" x="370" y="66" text-anchor="middle">IMAGE_BASE_URL + "/" + key</text>
+  <rect class="orange" x="540" y="20" width="200" height="70" rx="8"/><text class="t" x="640" y="46" text-anchor="middle">CloudFront → S3 (private)</text><text class="s" x="640" y="66" text-anchor="middle">Origin Access Control</text>
+  <path class="a" d="M210 55H270M470 55H540"/>
+  <text class="s" x="380" y="125" text-anchor="middle">One private bucket: images/…  (pictures)   and   /  (index.html + hashed JS/CSS)</text>
+</svg>
+<figcaption>Figure 6.1 — Key in the database, bytes in S3, URL assembled at request time.</figcaption>
+</figure>
+<pre>aws s3api create-bucket --bucket "$BUCKET" --region "$AWS_REGION" --create-bucket-configuration LocationConstraint="$AWS_REGION"
+aws s3api put-public-access-block --bucket "$BUCKET" --public-access-block-configuration \
+  BlockPublicAcls=true,IgnorePublicAcls=true,BlockPublicPolicy=true,RestrictPublicBuckets=true
+aws s3 sync assets/images "s3://$BUCKET/images" --cache-control "public, max-age=86400"
+aws s3 presign "s3://$BUCKET/images/headphones.svg" --expires-in 300     <span class="c"># opens the picture; plain URL → AccessDenied (correct!)</span></pre>
+<div class="box pit"><b>Pitfalls</b> turning off Block Public Access "to make it work" · key mismatch between DB and S3 (case-sensitive, no leading "/") · very long cache on files you later overwrite · S3 returns 403 (not 404) for missing keys when you lack ListBucket.</div>
+
+<!-- ================= 7 DOCKER / ECR ================= -->
+<h1><span class="n">7</span>Docker image and ECR</h1>
+<figure>
+<svg viewBox="0 0 760 140">
+  <rect class="gray" x="6" y="30" width="110" height="60" rx="8"/><text class="t" x="61" y="56" text-anchor="middle">Developer</text><text class="s" x="61" y="73" text-anchor="middle">Dockerfile</text>
+  <rect class="blue" x="150" y="30" width="120" height="60" rx="8"/><text class="t" x="210" y="56" text-anchor="middle">Docker image</text><text class="s" x="210" y="73" text-anchor="middle">product-api:1.0.0</text>
+  <rect class="red" x="304" y="30" width="150" height="60" rx="8"/><text class="t" x="379" y="56" text-anchor="middle">ECR repository</text><text class="s" x="379" y="73" text-anchor="middle">…dkr.ecr…/product-api</text>
+  <rect class="orange" x="488" y="30" width="120" height="60" rx="8"/><text class="t" x="548" y="56" text-anchor="middle">ECS</text><text class="s" x="548" y="73" text-anchor="middle">pulls with exec role</text>
+  <rect class="green" x="642" y="30" width="110" height="60" rx="8"/><text class="t" x="697" y="56" text-anchor="middle">Fargate task</text><text class="s" x="697" y="73" text-anchor="middle">container runs</text>
+  <path class="a" d="M116 60H150M270 60H304M454 60H488M608 60H642"/>
+  <text class="s" x="133" y="118" text-anchor="middle">build</text><text class="s" x="287" y="118" text-anchor="middle">tag + push</text><text class="s" x="471" y="118" text-anchor="middle">pull</text><text class="s" x="625" y="118" text-anchor="middle">start</text>
+</svg>
+<figcaption>Figure 7.1 — Developer → docker build → image → ECR → ECS.</figcaption>
+</figure>
+<h3>What the Dockerfile does</h3>
+<table>
+<tr><th>Step</th><th>Purpose</th></tr>
+<tr><td>Stage 1: <code>node:22-alpine</code>, <code>npm ci --omit=dev</code></td><td>Exact, locked, production-only dependencies; layer cached until <code>package*.json</code> changes</td></tr>
+<tr><td>Stage 2: fresh <code>node:22-alpine</code></td><td>Small runtime image — build tooling not shipped</td></tr>
+<tr><td><code>ADD …global-bundle.pem</code></td><td>Amazon RDS CA bundle so the DB connection is encrypted <i>and verified</i></td></tr>
+<tr><td><code>chown</code> + <code>USER node</code></td><td>Never run as root in the container</td></tr>
+<tr><td><code>CMD ["node","src/server.js"]</code></td><td>Exec form → Node is PID 1 and receives SIGTERM → graceful shutdown on deploys</td></tr>
+<tr><td><code>.dockerignore</code></td><td>Keeps <code>node_modules</code>, <code>.env</code> out of the image</td></tr>
+</table>
+<pre><span class="c"># 1 build   2 test locally   3 create repo   4 tag   5 authenticate   6 push</span>
+cd backend &amp;&amp; docker build -t product-api:1.0.0 .
+docker run --rm -p 3000:3000 --network aws-node-react-deployment-github-actions_default \
+  -e DB_HOST=db -e DB_NAME=productsdb -e DB_USER=root -e DB_PASSWORD=localdevpassword product-api:1.0.0
+aws ecr create-repository --repository-name product-api --image-scanning-configuration scanOnPush=true
+aws ecr put-lifecycle-policy --repository-name product-api --lifecycle-policy-text file://infra/ecr-lifecycle-policy.json
+export ECR_URI=$ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/product-api
+docker tag product-api:1.0.0 $ECR_URI:1.0.0
+aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
+docker push $ECR_URI:1.0.0
+aws ecr describe-images --repository-name product-api --query 'imageDetails[].[imageTags[0],imagePushedAt]' --output table</pre>
+<div class="box pit"><b>Pitfalls</b> <code>no basic auth credentials</code> (login expires after 12 h / wrong region) · pushing <code>latest</code> and expecting ECS to notice · image built on Apple Silicon (<code>exec format error</code> — build with <code>--platform linux/amd64</code>) · tag without the registry prefix goes to Docker Hub.</div>
+
+<!-- ================= 8 ECS ================= -->
+<h1><span class="n">8</span>ECS Fargate</h1>
+<p><b>Fargate</b> = "run this container with 0.25 vCPU and 512 MB"; AWS finds the compute. No servers to patch. Each task gets its <i>own network interface</i> (private IP + security group) in <code>awsvpc</code> mode.</p>
+<figure>
+<svg viewBox="0 0 760 210">
+  <rect class="green" x="10" y="10" width="740" height="190" rx="10" style="fill:#f4fbf6"/><text class="t" x="24" y="32">Cluster  product-cluster</text>
+  <rect class="blue" x="30" y="46" width="700" height="140" rx="10" style="fill:#f4f8fd"/><text class="t" x="44" y="68">Service  product-api-service    desired = 2</text><text class="s" x="44" y="84">keeps 2 tasks running, spread over 2 AZs, attached to the ALB target group</text>
+  <rect class="orange" x="50" y="98" width="320" height="76" rx="8"/><text class="t" x="66" y="120">Task (AZ-A)</text><text class="s" x="66" y="138">from Task Definition  product-api:N</text>
+  <rect class="b" x="66" y="146" width="288" height="22" rx="5"/><text class="s" x="210" y="161" text-anchor="middle">container product-api · :3000 · 0.25 vCPU / 512 MB</text>
+  <rect class="orange" x="390" y="98" width="320" height="76" rx="8"/><text class="t" x="406" y="120">Task (AZ-B)</text><text class="s" x="406" y="138">from Task Definition  product-api:N</text>
+  <rect class="b" x="406" y="146" width="288" height="22" rx="5"/><text class="s" x="550" y="161" text-anchor="middle">container product-api · :3000 · 0.25 vCPU / 512 MB</text>
+</svg>
+<figcaption>Figure 8.1 — Cluster → Service → Tasks → Containers. The task definition is the blueprint; revisions are immutable.</figcaption>
+</figure>
+<h3>Task definition, field by field</h3>
+<table>
+<tr><th>Setting</th><th>Value</th><th>Why</th></tr>
+<tr><td>Launch / network</td><td>FARGATE, <code>awsvpc</code></td><td>per-task ENI and security group</td></tr>
+<tr><td>CPU / memory</td><td>256 / 512</td><td>smallest valid size; raise to 512/1024 if memory &gt; ~70%</td></tr>
+<tr><td>Image</td><td><code>$ECR_URI:1.0.0</code></td><td>exact tag, never <code>latest</code></td></tr>
+<tr><td>Port</td><td>3000</td><td>what the target group forwards to</td></tr>
+<tr><td>Environment</td><td>DB_HOST, DB_NAME, DB_SSL, DB_SECRET_ARN…</td><td>non-secret config; the ARN is a <i>pointer</i></td></tr>
+<tr><td>Roles</td><td>execution + task role</td><td>see chapter 5</td></tr>
+<tr><td>healthCheck</td><td><code>wget …/health</code></td><td>ECS replaces unhealthy tasks</td></tr>
+<tr><td>stopTimeout / init</td><td>30 s / true</td><td>time to drain after SIGTERM; reap zombies</td></tr>
+<tr><td>logConfiguration</td><td><code>awslogs</code> → <code>/ecs/product-api</code></td><td><b>this ships console.log to CloudWatch</b></td></tr>
+</table>
+<pre>aws logs create-log-group --log-group-name /ecs/product-api
+aws logs put-retention-policy --log-group-name /ecs/product-api --retention-in-days 7
+aws ecs create-cluster --cluster-name product-cluster
+export IMAGE_URI=$ECR_URI:1.0.0 &amp;&amp; bash scripts/render-task-def.sh
+aws ecs register-task-definition --cli-input-json file://infra/task-definition.rendered.json
+
+<span class="c"># one-off task: same image, different command → creates the table + 5 products</span>
+aws ecs run-task --cluster product-cluster --launch-type FARGATE --task-definition product-api \
+  --network-configuration "awsvpcConfiguration={subnets=[$PRIV_A],securityGroups=[$ECS_SG],assignPublicIp=DISABLED}" \
+  --overrides '{"containerOverrides":[{"name":"product-api","command":["node","src/scripts/init-db.js"]}]}'
+aws logs tail /ecs/product-api --follow --since 5m      <span class="c"># expect: db_credentials_loaded … db_seeded</span></pre>
+<h3>Create the service (2 tasks, 2 AZs) — after the ALB exists (next chapter)</h3>
+<pre>aws ecs create-service --cluster product-cluster --service-name product-api-service \
+  --task-definition product-api --desired-count 2 --launch-type FARGATE \
+  --network-configuration "awsvpcConfiguration={subnets=[$PRIV_A,$PRIV_B],securityGroups=[$ECS_SG],assignPublicIp=DISABLED}" \
+  --load-balancers "targetGroupArn=$TG_ARN,containerName=product-api,containerPort=3000" \
+  --health-check-grace-period-seconds 30 \
+  --deployment-configuration "deploymentCircuitBreaker={enable=true,rollback=true},minimumHealthyPercent=100,maximumPercent=200"</pre>
+
+<h2>Zero-downtime rolling deployment</h2>
+<figure>
+<svg viewBox="0 0 760 250">
+  <g class="s"><text x="10" y="34">before</text><text x="10" y="94">step 1</text><text x="10" y="154">step 2</text><text x="10" y="214">step 3</text></g>
+  <rect class="gray" x="90" y="14" width="110" height="34" rx="6"/><text class="t" x="145" y="36" text-anchor="middle">A  rev 1</text>
+  <rect class="gray" x="210" y="14" width="110" height="34" rx="6"/><text class="t" x="265" y="36" text-anchor="middle">B  rev 1</text>
+  <text class="s" x="350" y="36">ALB → A, B</text>
+  <rect class="gray" x="90" y="74" width="110" height="34" rx="6"/><text class="t" x="145" y="96" text-anchor="middle">A  rev 1</text>
+  <rect class="gray" x="210" y="74" width="110" height="34" rx="6"/><text class="t" x="265" y="96" text-anchor="middle">B  rev 1</text>
+  <rect class="orange" x="330" y="74" width="110" height="34" rx="6"/><text class="t" x="385" y="96" text-anchor="middle">C  starting</text>
+  <rect class="orange" x="450" y="74" width="110" height="34" rx="6"/><text class="t" x="505" y="96" text-anchor="middle">D  starting</text>
+  <text class="s" x="580" y="96">start 2 new first (max 200%)</text>
+  <rect class="gray" x="90" y="134" width="110" height="34" rx="6"/><text class="t" x="145" y="156" text-anchor="middle">A  rev 1</text>
+  <rect class="gray" x="210" y="134" width="110" height="34" rx="6"/><text class="t" x="265" y="156" text-anchor="middle">B  rev 1</text>
+  <rect class="green" x="330" y="134" width="110" height="34" rx="6"/><text class="t" x="385" y="156" text-anchor="middle">C  healthy</text>
+  <rect class="green" x="450" y="134" width="110" height="34" rx="6"/><text class="t" x="505" y="156" text-anchor="middle">D  healthy</text>
+  <text class="s" x="580" y="156">ALB → A, B, C, D</text>
+  <rect class="gray" x="90" y="194" width="110" height="34" rx="6" style="stroke-dasharray:4 3;fill:#fff"/><text class="s" x="145" y="215" text-anchor="middle">A  drained</text>
+  <rect class="gray" x="210" y="194" width="110" height="34" rx="6" style="stroke-dasharray:4 3;fill:#fff"/><text class="s" x="265" y="215" text-anchor="middle">B  drained</text>
+  <rect class="green" x="330" y="194" width="110" height="34" rx="6"/><text class="t" x="385" y="216" text-anchor="middle">C  rev 2</text>
+  <rect class="green" x="450" y="194" width="110" height="34" rx="6"/><text class="t" x="505" y="216" text-anchor="middle">D  rev 2</text>
+  <text class="s" x="580" y="216">old: SIGTERM after 30 s drain</text>
+</svg>
+<figcaption>Figure 8.2 — If C or D never become healthy, the circuit breaker rolls back to revision 1 automatically.</figcaption>
+</figure>
+<pre><span class="c"># deploy a new version</span>
+docker build -t product-api:1.0.1 backend &amp;&amp; docker tag product-api:1.0.1 $ECR_URI:1.0.1 &amp;&amp; docker push $ECR_URI:1.0.1
+export IMAGE_URI=$ECR_URI:1.0.1 &amp;&amp; bash scripts/render-task-def.sh
+aws ecs register-task-definition --cli-input-json file://infra/task-definition.rendered.json
+aws ecs update-service --cluster product-cluster --service product-api-service --task-definition product-api</pre>
+
+<!-- ================= 9 ALB ================= -->
+<h1><span class="n">9</span>Application Load Balancer</h1>
+<p><b>What:</b> the single front door that accepts HTTP(S), picks a healthy task and forwards the request. <b>Why:</b> task IPs change constantly and there are two; the ALB gives one stable DNS name, balances across AZs and <b>stops sending traffic to failing tasks</b>.</p>
+<figure>
+<svg viewBox="0 0 760 240">
+  <rect class="gray" x="10" y="90" width="100" height="50" rx="8"/><text class="t" x="60" y="120" text-anchor="middle">Client</text>
+  <rect class="green" x="170" y="70" width="190" height="90" rx="8"/><text class="t" x="265" y="94" text-anchor="middle">ALB  product-alb</text><text class="s" x="265" y="112" text-anchor="middle">public subnets A + B</text><text class="s" x="265" y="128" text-anchor="middle">listener HTTP :80 → target group</text><text class="s" x="265" y="144" text-anchor="middle">SG: alb-sg</text>
+  <rect class="orange" x="420" y="70" width="150" height="90" rx="8"/><text class="t" x="495" y="94" text-anchor="middle">Target group</text><text class="s" x="495" y="112" text-anchor="middle">type IP · HTTP :3000</text><text class="s" x="495" y="128" text-anchor="middle">health: GET /health</text><text class="s" x="495" y="144" text-anchor="middle">2 ok = in · 3 fail = out</text>
+  <rect class="blue" x="630" y="40" width="120" height="60" rx="8"/><text class="t" x="690" y="66" text-anchor="middle">Task AZ-A</text><text class="s" x="690" y="84" text-anchor="middle">10.0.2.x:3000 ✔</text>
+  <rect class="blue" x="630" y="130" width="120" height="60" rx="8"/><text class="t" x="690" y="156" text-anchor="middle">Task AZ-B</text><text class="s" x="690" y="174" text-anchor="middle">10.0.4.x:3000 ✔</text>
+  <path class="a" d="M110 115H170M360 115H420"/><path class="a" d="M570 100L630 75"/><path class="a" d="M570 130L630 160"/>
+  <path class="ad" d="M630 55C600 20 520 20 495 70" style="display:none"/>
+  <text class="s" x="380" y="215" text-anchor="middle">ECS registers/deregisters task IPs in the target group itself — never add targets by hand.</text>
+</svg>
+<figcaption>Figure 9.1 — ALB → target group → healthy tasks.</figcaption>
+</figure>
+<table>
+<tr><th>Target group field</th><th>Value</th></tr>
+<tr><td>Target type</td><td><b>IP</b> (required for Fargate) · name <code>product-api-tg</code> · HTTP : 3000</td></tr>
+<tr><td>Health check</td><td>path <b>/health</b> · interval 15 s · timeout 5 s · healthy 2 · unhealthy 3 · success 200</td></tr>
+<tr><td>Attribute</td><td>deregistration delay <b>30 s</b> (default 300 s makes each deploy 5 min slower)</td></tr>
+</table>
+<p>Load balancer: <b>Internet-facing</b>, IPv4, VPC <code>product-vpc</code>, subnets <b>public-a + public-b</b>, security group <code>alb-sg</code> only, listener HTTP:80 → <code>product-api-tg</code>.</p>
+<h3>Verify high availability</h3>
+<pre>aws elbv2 describe-target-health --target-group-arn $TG_ARN --query 'TargetHealthDescriptions[].[Target.Id,TargetHealth.State]' --output table
+curl -s http://$ALB_DNS/api/products | head -c 300
+TASK=$(aws ecs list-tasks --cluster product-cluster --service-name product-api-service --query 'taskArns[0]' --output text)
+aws ecs stop-task --cluster product-cluster --task $TASK --reason "HA test"
+for i in $(seq 1 20); do curl -s -o /dev/null -w "%{http_code} " http://$ALB_DNS/health; sleep 2; done   <span class="c"># 200 200 200 …</span></pre>
+<table>
+<tr><th>ALB says</th><th>Meaning</th></tr>
+<tr><td>503</td><td>no healthy targets registered → service events / stopped tasks</td></tr>
+<tr><td>502</td><td>task closed the connection / crashed mid-request → app logs</td></tr>
+<tr><td>504</td><td>task too slow, or SG blocks → <code>TargetResponseTime</code>, <code>ecs-sg</code></td></tr>
+<tr><td>Target.Timeout</td><td>security group or wrong port</td></tr>
+<tr><td>Target.ResponseCodeMismatch</td><td>health path wrong / not 200</td></tr>
+</table>
+
+<!-- ================= 10 CLOUDFRONT ================= -->
+<h1><span class="n">10</span>CloudFront and the React frontend</h1>
+<p><b>Why CloudFront:</b> (1) free HTTPS on <code>*.cloudfront.net</code> — an ALB :443 listener needs a domain + certificate; (2) <b>one origin</b> for everything, so no CORS and no mixed-content errors; (3) the S3 bucket stays private.</p>
+<figure>
+<svg viewBox="0 0 760 250">
+  <rect class="navy" x="10" y="95" width="110" height="50" rx="8"/><text class="t w" x="65" y="124" text-anchor="middle">Browser</text>
+  <rect class="purple" x="190" y="60" width="190" height="120" rx="8"/><text class="t" x="285" y="84" text-anchor="middle">CloudFront</text>
+  <text class="s" x="285" y="106" text-anchor="middle">default (*)  → S3</text><text class="s" x="285" y="124" text-anchor="middle">/images/*  → S3 (cache 1 day)</text><text class="s" x="285" y="142" text-anchor="middle">/api/*  → ALB (cache OFF)</text><text class="s" x="285" y="162" text-anchor="middle">HTTP → HTTPS redirect</text>
+  <rect class="orange" x="470" y="30" width="270" height="80" rx="8"/><text class="t" x="605" y="56" text-anchor="middle">S3 bucket (private, OAC)</text><text class="s" x="605" y="76" text-anchor="middle">index.html · assets/*.js .css</text><text class="s" x="605" y="92" text-anchor="middle">images/*.svg</text>
+  <rect class="green" x="470" y="140" width="270" height="80" rx="8"/><text class="t" x="605" y="166" text-anchor="middle">ALB :80 → ECS → RDS</text><text class="s" x="605" y="186" text-anchor="middle">origin request policy:</text><text class="s" x="605" y="202" text-anchor="middle">AllViewerExceptHostHeader</text>
+  <path class="a" d="M120 120H190"/><text class="s" x="125" y="112">HTTPS</text>
+  <path class="a" d="M380 95L470 70"/><path class="ao" d="M380 145L470 170"/>
+</svg>
+<figcaption>Figure 10.1 — One HTTPS site; CloudFront routes by path.</figcaption>
+</figure>
+<pre>cd frontend &amp;&amp; npm ci &amp;&amp; npm run build &amp;&amp; cd ..
+aws s3 sync frontend/dist "s3://$BUCKET" --delete --exclude "images/*" --exclude "index.html" --cache-control "public, max-age=31536000, immutable"
+aws s3 cp frontend/dist/index.html "s3://$BUCKET/index.html" --cache-control "no-cache"</pre>
+<p>Hashed JS/CSS (<code>index-YEUI1bVh.js</code>) can be cached for a year; <code>index.html</code> must always be re-checked.</p>
+<table>
+<tr><th>Create in the console</th><th>Settings</th></tr>
+<tr><td>Origin 1</td><td>The bucket's regular S3 endpoint (<b>not</b> the website endpoint) · Origin access control (new OAC) · default root object <code>index.html</code> · then paste the generated <b>bucket policy</b> into S3</td></tr>
+<tr><td>Origin 2</td><td>ALB DNS name · HTTP only · port 80</td></tr>
+<tr><td>Behavior <code>/api/*</code></td><td>origin = ALB · all HTTP methods · cache policy <b>CachingDisabled</b> · origin request policy <b>AllViewerExceptHostHeader</b></td></tr>
+<tr><td>Default behavior</td><td>origin = S3 · GET/HEAD · CachingOptimized · redirect HTTP→HTTPS · price class: North America + Europe</td></tr>
+</table>
+<pre>curl -sI https://$CF_DOMAIN/                      <span class="c"># 200 text/html</span>
+curl -s  https://$CF_DOMAIN/api/products | head -c 250
+curl -sI https://$CF_DOMAIN/images/lamp.svg      <span class="c"># 200 image/svg+xml</span>
+curl -sI http://$BUCKET.s3.amazonaws.com/images/lamp.svg | head -n1   <span class="c"># 403 → bucket is private ✔</span>
+aws cloudfront create-invalidation --distribution-id &lt;ID&gt; --paths "/index.html"   <span class="c"># after each frontend deploy</span></pre>
+<div class="box pit"><b>Pitfalls</b> website endpoint as origin (OAC unsupported) · no bucket policy (every request 403) · default caching on <code>/api/*</code> · origin protocol HTTPS-only to an HTTP listener (502) · adding the SPA "403/404 → index.html" error rule, which would turn API 404s into HTML.</div>
+
+<h2>Optional: custom domain + HTTPS on the ALB (Route 53)</h2>
+<figure>
+<svg viewBox="0 0 760 100">
+  <rect class="gray" x="6" y="25" width="100" height="50" rx="8"/><text class="t" x="56" y="55" text-anchor="middle">User</text>
+  <rect class="blue" x="140" y="25" width="130" height="50" rx="8"/><text class="t" x="205" y="48" text-anchor="middle">Route 53</text><text class="s" x="205" y="64" text-anchor="middle">app.example.com</text>
+  <rect class="purple" x="304" y="25" width="150" height="50" rx="8"/><text class="t" x="379" y="48" text-anchor="middle">CloudFront</text><text class="s" x="379" y="64" text-anchor="middle">ACM cert (us-east-1)</text>
+  <rect class="green" x="488" y="25" width="130" height="50" rx="8"/><text class="t" x="553" y="48" text-anchor="middle">ALB :443</text><text class="s" x="553" y="64" text-anchor="middle">ACM cert (ALB region)</text>
+  <rect class="blue" x="652" y="25" width="100" height="50" rx="8"/><text class="t" x="702" y="55" text-anchor="middle">ECS → RDS</text>
+  <path class="a" d="M106 50H140M270 50H304M454 50H488M618 50H652"/>
+</svg>
+<figcaption>Figure 10.2 — With your own domain you get the full Route 53 → CloudFront → ALB :443 → ECS path (needs a domain, ≈ $12/yr).</figcaption>
+</figure>
+
+<!-- ================= 11 CLOUDWATCH ================= -->
+<h1><span class="n">11</span>CloudWatch — logs, metrics, alarms</h1>
+<p>Containers are disposable and have no SSH; if it is not in CloudWatch, it is gone when the task dies. Our logger prints one JSON object per line with <code>console.log</code>; Docker captures stdout; the <code>awslogs</code> driver (in the task definition) forwards it. No agent, no code changes.</p>
+<figure>
+<svg viewBox="0 0 760 250">
+  <rect class="blue" x="10" y="20" width="140" height="48" rx="8"/><text class="t" x="80" y="48" text-anchor="middle">console.log(...)</text>
+  <rect class="gray" x="180" y="20" width="110" height="48" rx="8"/><text class="t" x="235" y="48" text-anchor="middle">stdout</text>
+  <rect class="orange" x="320" y="20" width="120" height="48" rx="8"/><text class="t" x="380" y="42" text-anchor="middle">awslogs</text><text class="s" x="380" y="58" text-anchor="middle">log driver</text>
+  <rect class="green" x="470" y="14" width="150" height="60" rx="8"/><text class="t" x="545" y="38" text-anchor="middle">Log group</text><text class="s" x="545" y="56" text-anchor="middle">/ecs/product-api</text>
+  <rect class="purple" x="650" y="20" width="100" height="48" rx="8"/><text class="t" x="700" y="42" text-anchor="middle">Logs</text><text class="s" x="700" y="58" text-anchor="middle">Insights</text>
+  <path class="a" d="M150 44H180M290 44H320M440 44H470M620 44H650"/>
+  <text class="s" x="545" y="92" text-anchor="middle">stream: ecs/product-api/&lt;task-id&gt;  (one per task)</text>
+  <rect class="red" x="10" y="130" width="150" height="48" rx="8"/><text class="t" x="85" y="152" text-anchor="middle">ALB metrics</text><text class="s" x="85" y="168" text-anchor="middle">5xx · latency · healthy hosts</text>
+  <rect class="red" x="10" y="190" width="150" height="48" rx="8"/><text class="t" x="85" y="212" text-anchor="middle">ECS metrics</text><text class="s" x="85" y="228" text-anchor="middle">CPU % · memory %</text>
+  <rect class="orange" x="260" y="158" width="150" height="48" rx="8"/><text class="t" x="335" y="187" text-anchor="middle">CloudWatch Alarms</text>
+  <rect class="green" x="520" y="158" width="130" height="48" rx="8"/><text class="t" x="585" y="187" text-anchor="middle">SNS → e-mail</text>
+  <path class="a" d="M160 154L260 175"/><path class="a" d="M160 214L260 190"/><path class="a" d="M410 182H520"/>
+</svg>
+<figcaption>Figure 11.1 — Logs flow automatically; metrics feed alarms that e-mail you.</figcaption>
+</figure>
+<h3>Find your console.log output</h3>
+<p>Console: CloudWatch → <b>Logs → Log groups → /ecs/product-api</b> → pick a stream (two tasks = two streams) or <b>Search all log streams</b>. CLI:</p>
+<pre>aws logs tail /ecs/product-api --follow --since 10m
+aws logs tail /ecs/product-api --since 1h --filter-pattern '"level":"error"'
+<span class="c"># sample line:</span>
+{"time":"…","level":"info","msg":"request","requestId":"Root=1-67…","method":"GET","path":"/api/products","status":200,"ms":6.4}</pre>
+<h3>Logs Insights queries (JSON fields are discovered automatically)</h3>
+<pre>fields @timestamp, msg, err.message, requestId | filter level = "error" | sort @timestamp desc | limit 50
+filter msg = "request" | stats count() as n, avg(ms), pct(ms,95) as p95 by bin(5m)
+filter msg = "request" and status >= 500 | stats count() by path</pre>
+<table>
+<tr><th>Metric</th><th>Healthy</th><th>Tells you</th></tr>
+<tr><td>ALB <code>HTTPCode_Target_5XX_Count</code></td><td>0</td><td>your app returned 5xx</td></tr>
+<tr><td>ALB <code>HTTPCode_ELB_5XX_Count</code></td><td>0</td><td>ALB failed: 502/503/504</td></tr>
+<tr><td>ALB <code>TargetResponseTime</code></td><td>&lt; 0.3 s</td><td>slow app or DB</td></tr>
+<tr><td>ALB <code>HealthyHostCount</code> / <code>UnHealthyHostCount</code></td><td>2 / 0</td><td>tasks passing/failing health checks</td></tr>
+<tr><td>ECS <code>CPUUtilization</code> / <code>MemoryUtilization</code></td><td>&lt; 70%</td><td>raise size or add tasks; OOM = exit code 137</td></tr>
+</table>
+<pre>aws sns create-topic --name product-alerts
+aws sns subscribe --topic-arn arn:aws:sns:$AWS_REGION:$ACCOUNT_ID:product-alerts --protocol email --notification-endpoint you@example.com
+aws cloudwatch put-metric-alarm --alarm-name product-api-high-cpu --namespace AWS/ECS --metric-name CPUUtilization --statistic Average \
+  --dimensions Name=ClusterName,Value=product-cluster Name=ServiceName,Value=product-api-service \
+  --period 300 --evaluation-periods 2 --threshold 80 --comparison-operator GreaterThanThreshold \
+  --alarm-actions arn:aws:sns:$AWS_REGION:$ACCOUNT_ID:product-alerts</pre>
+<div class="box pit"><b>Pitfalls</b> no retention (never-expiring logs cost money) · logging secrets/bodies · unstructured logs you cannot filter · alarm without a <i>confirmed</i> SNS subscription · wrong region/time range in the console.</div>
+
+<!-- ================= 12 TROUBLESHOOTING ================= -->
+<h1><span class="n">12</span>Troubleshooting map</h1>
+<p>Follow the request from the outside in. The first layer that misbehaves is where to dig.</p>
+<figure>
+<svg viewBox="0 0 760 330">
+  <g class="t">
+  <rect class="navy" x="6" y="20" width="96" height="40" rx="6"/><text class="w" x="54" y="45" text-anchor="middle">Browser</text>
+  <rect class="purple" x="116" y="20" width="96" height="40" rx="6"/><text x="164" y="45" text-anchor="middle">CloudFront</text>
+  <rect class="green" x="226" y="20" width="80" height="40" rx="6"/><text x="266" y="45" text-anchor="middle">ALB</text>
+  <rect class="orange" x="320" y="20" width="100" height="40" rx="6"/><text x="370" y="45" text-anchor="middle">Target grp</text>
+  <rect class="blue" x="434" y="20" width="90" height="40" rx="6"/><text x="479" y="45" text-anchor="middle">ECS task</text>
+  <rect class="blue" x="538" y="20" width="90" height="40" rx="6"/><text x="583" y="45" text-anchor="middle">Node</text>
+  <rect class="purple" x="642" y="20" width="110" height="40" rx="6"/><text x="697" y="45" text-anchor="middle">Secrets / RDS</text>
+  </g>
+  <path class="a" d="M102 40H116M212 40H226M306 40H320M420 40H434M524 40H538M628 40H642"/>
+  <path class="ln" d="M54 60V100M164 60V100M266 60V100M370 60V100M479 60V100M583 60V100M697 60V100"/>
+  <g class="s">
+  <text x="54" y="116" text-anchor="middle">DevTools</text><text x="54" y="130" text-anchor="middle">status code</text>
+  <text x="164" y="116" text-anchor="middle">curl -I · x-cache</text><text x="164" y="130" text-anchor="middle">403 = bucket policy</text><text x="164" y="144" text-anchor="middle">502 = ALB origin</text>
+  <text x="266" y="116" text-anchor="middle">ALB metrics</text><text x="266" y="130" text-anchor="middle">503 = no healthy</text><text x="266" y="144" text-anchor="middle">alb-sg inbound</text>
+  <text x="370" y="116" text-anchor="middle">describe-target-</text><text x="370" y="130" text-anchor="middle">health → Reason</text><text x="370" y="144" text-anchor="middle">path /health · :3000</text>
+  <text x="479" y="116" text-anchor="middle">service events</text><text x="479" y="130" text-anchor="middle">stoppedReason</text><text x="479" y="144" text-anchor="middle">NAT · image tag · arch</text>
+  <text x="583" y="116" text-anchor="middle">Logs Insights</text><text x="583" y="130" text-anchor="middle">level = "error"</text><text x="583" y="144" text-anchor="middle">missing env var</text>
+  <text x="697" y="116" text-anchor="middle">ETIMEDOUT → rds-sg</text><text x="697" y="130" text-anchor="middle">ACCESS_DENIED → secret</text><text x="697" y="144" text-anchor="middle">AccessDenied → task role</text>
+  </g>
+  <rect class="orange" x="6" y="180" width="748" height="130" rx="8" style="fill:#fffaf0"/>
+  <text class="t" x="20" y="204">Reading ECS "stopped reasons"</text>
+  <g class="s">
+  <text x="20" y="226">CannotPullContainerError … i/o timeout        →  private route table lacks 0.0.0.0/0 → NAT (or NAT not Available / not in a public subnet)</text>
+  <text x="20" y="244">CannotPullContainerError … not found            →  wrong image URI / tag</text>
+  <text x="20" y="262">ResourceInitializationError … secret/log        →  no NAT route, or execution role missing permissions</text>
+  <text x="20" y="280">exec format error in logs                              →  CPU architecture mismatch (build for linux/amd64)</text>
+  <text x="20" y="298">exit code 137 / OutOfMemory                         →  raise task memory</text>
+  </g>
+</svg>
+<figcaption>Figure 12.1 — Layer-by-layer debugging map.</figcaption>
+</figure>
+<pre><span class="c"># the three commands that solve most ECS problems</span>
+aws ecs describe-services --cluster product-cluster --services product-api-service --query 'services[0].events[:6].message' --output text
+aws ecs list-tasks --cluster product-cluster --desired-status STOPPED --query 'taskArns[:3]' --output text | xargs -r aws ecs describe-tasks --cluster product-cluster --query 'tasks[].[stoppedReason,containers[0].reason]' --output text --tasks
+aws logs tail /ecs/product-api --since 15m</pre>
+<table>
+<tr><th>Symptom</th><th>Likely cause → fix</th></tr>
+<tr><td>Images broken, API fine</td><td>S3 key ≠ DB <code>image_key</code>, or bucket policy/OAC</td></tr>
+<tr><td>Old page after deploy</td><td>Invalidate <code>/index.html</code>; hard reload</td></tr>
+<tr><td>Tasks flap start/stop</td><td>Container crash or failing health check → logs + <code>stoppedReason</code></td></tr>
+<tr><td>Everything times out</td><td>Run Reachability Analyzer between a task ENI and the RDS ENI on 3306</td></tr>
+<tr><td>Bill higher than expected</td><td>NAT / ALB / Fargate left running → Cost Explorer by service</td></tr>
+</table>
+
+<!-- ================= 13 COST / TEARDOWN ================= -->
+<h1><span class="n">13</span>Cost, teardown and cheat-sheet</h1>
+<h2>What costs money (rough orders of magnitude)</h2>
+<table>
+<tr><th>Service</th><th>Free Tier?</th><th>Left running</th></tr>
+<tr><td><b>NAT Gateway</b></td><td>No</td><td>≈ $1.1 / day + data (biggest item)</td></tr>
+<tr><td>Fargate (2 × 0.25 vCPU / 0.5 GB)</td><td>No</td><td>≈ $0.6 / day</td></tr>
+<tr><td>ALB</td><td>750 h/mo for 12 months on older accounts</td><td>≈ $0.5 / day otherwise</td></tr>
+<tr><td>Public IPv4 (ALB ×2, NAT ×1)</td><td>partly</td><td>≈ $0.4 / day</td></tr>
+<tr><td>RDS db.t3.micro, 20 GB</td><td>750 h/mo, 12 months (older accounts)</td><td>≈ $0.5 / day otherwise</td></tr>
+<tr><td>Secrets Manager</td><td>30-day trial</td><td>≈ $0.40 / month</td></tr>
+<tr><td>S3, ECR ≤500 MB, CloudFront ≤1 TB, Logs ≤5 GB</td><td>Yes</td><td>pennies</td></tr>
+</table>
+<div class="box warn"><b>Total</b> ≈ <b>$2–3 per day</b> with everything up. Prices vary by region and change — verify with the AWS Pricing Calculator and set a <b>$10 budget alarm</b> first. Pause cheaply: ECS desired count → 0, delete the NAT Gateway + release its Elastic IP, stop RDS (AWS restarts it after 7 days).</div>
+
+<h2>Teardown order (dependencies first)</h2>
+<figure>
+<svg viewBox="0 0 760 120">
+  <g class="t">
+  <rect class="purple" x="6" y="30" width="80" height="50" rx="6"/><text x="46" y="52" text-anchor="middle">1</text><text class="s" x="46" y="68" text-anchor="middle">CloudFront</text>
+  <rect class="green" x="100" y="30" width="80" height="50" rx="6"/><text x="140" y="52" text-anchor="middle">2</text><text class="s" x="140" y="68" text-anchor="middle">ECS svc+cluster</text>
+  <rect class="green" x="194" y="30" width="80" height="50" rx="6"/><text x="234" y="52" text-anchor="middle">3</text><text class="s" x="234" y="68" text-anchor="middle">ALB → TG</text>
+  <rect class="purple" x="288" y="30" width="80" height="50" rx="6"/><text x="328" y="52" text-anchor="middle">4</text><text class="s" x="328" y="68" text-anchor="middle">RDS (+secret)</text>
+  <rect class="orange" x="382" y="30" width="80" height="50" rx="6"/><text x="422" y="52" text-anchor="middle">5</text><text class="s" x="422" y="68" text-anchor="middle">S3 · ECR</text>
+  <rect class="red" x="476" y="30" width="80" height="50" rx="6"/><text x="516" y="52" text-anchor="middle">6</text><text class="s" x="516" y="68" text-anchor="middle">Logs · alarms</text>
+  <rect class="blue" x="570" y="30" width="80" height="50" rx="6"/><text x="610" y="52" text-anchor="middle">7</text><text class="s" x="610" y="68" text-anchor="middle">IAM roles</text>
+  <rect class="gray" x="664" y="30" width="90" height="50" rx="6"/><text x="709" y="52" text-anchor="middle">8</text><text class="s" x="709" y="68" text-anchor="middle">NAT → EIP → VPC</text>
+  </g>
+  <path class="a" d="M86 55H100M180 55H194M274 55H288M368 55H382M462 55H476M556 55H570M650 55H664"/>
+  <text class="s" x="380" y="108" text-anchor="middle">Release the NAT's Elastic IP — an unattached EIP is billed. Check that EIPs, NAT gateways, load balancers, RDS, ECS are all empty afterwards.</text>
+</svg>
+<figcaption>Figure 13.1 — Delete in this order; AWS refuses to delete things still in use.</figcaption>
+</figure>
+
+<h2>Cheat-sheet</h2>
+<table>
+<tr><th>Service</th><th>Job here</th><th>Verify with</th></tr>
+<tr><td>VPC / subnets / IGW / NAT</td><td>Private network, public front door, outbound-only for tasks</td><td>VPC Resource map</td></tr>
+<tr><td>Security groups</td><td>ALB-SG → ECS-SG:3000 → RDS-SG:3306</td><td>Reachability Analyzer</td></tr>
+<tr><td>RDS MySQL</td><td>Durable shared data (private)</td><td><code>describe-db-instances</code> → available, not public</td></tr>
+<tr><td>Secrets Manager + IAM roles</td><td>DB login handed to the task role only</td><td>log: <code>db_credentials_loaded</code></td></tr>
+<tr><td>S3</td><td>Private image + React storage</td><td>presigned URL works, public URL 403</td></tr>
+<tr><td>ECR</td><td>Private image registry</td><td><code>describe-images</code></td></tr>
+<tr><td>ECS Fargate</td><td>Runs 2 Node tasks across 2 AZs, rolling deploys</td><td>running = 2, tasks HEALTHY in two AZs</td></tr>
+<tr><td>ALB + target group</td><td>One door; routes only to healthy tasks</td><td><code>describe-target-health</code>; stop a task, stay 200</td></tr>
+<tr><td>CloudFront</td><td>HTTPS + path routing for site, images, API</td><td><code>curl -I</code> the three paths</td></tr>
+<tr><td>CloudWatch</td><td>Logs, metrics, alarms</td><td><code>aws logs tail</code>; Logs Insights</td></tr>
+</table>
+
+<h2>Where to go next</h2>
+<ul>
+<li>Express all of this as Terraform / CloudFormation / CDK — the console clicks above are the specification.</li>
+<li>ECS service auto scaling (target tracking on CPU 60%); Multi-AZ RDS; one NAT per AZ; VPC endpoints instead of NAT at scale.</li>
+<li>AWS WAF on CloudFront; restrict <code>alb-sg</code> to the CloudFront prefix list.</li>
+<li>CI/CD: GitHub Actions with OIDC (<code>infra/github-actions-deploy.yml.example</code>) — git push → ECR → new task-definition revision → rolling deploy.</li>
+</ul>
+
+<!-- ================= 14 AS-BUILT ================= -->
+<h1><span class="n">14</span>As-built: our live deployment</h1>
+<p>Everything in chapters 4–10 was executed against a real AWS account on <b>2 October 2026</b>, in <b>eu-north-1 (Stockholm)</b>, using the AWS CLI. This chapter records what exists, how we proved it works, and what went wrong on the way — so another developer can reproduce it or audit it.</p>
+
+<figure>
+<svg viewBox="0 0 760 520">
+  <rect class="navy" x="300" y="6" width="160" height="32" rx="16"/><text class="t w" x="380" y="27" text-anchor="middle">Browser (HTTPS)</text>
+  <rect class="purple" x="250" y="62" width="260" height="52" rx="8"/><text class="t" x="380" y="84" text-anchor="middle">CloudFront  ELRKAQU3ZFJM6</text><text class="s" x="380" y="102" text-anchor="middle">d2l849ooktd2w6.cloudfront.net · PriceClass_100</text>
+  <path class="a" d="M380 38V62"/>
+  <rect class="orange" x="14" y="160" width="210" height="92" rx="8"/><text class="t" x="119" y="184" text-anchor="middle">S3  product-app-7430…2983</text><text class="s" x="119" y="202" text-anchor="middle">private · Block Public Access ON</text><text class="s" x="119" y="218" text-anchor="middle">OAC product-oac (SigV4)</text><text class="s" x="119" y="234" text-anchor="middle">index.html · assets/ · images/ (5 SVG)</text>
+  <path class="a" d="M290 114L170 160"/><text class="s" x="60" y="140">default (*) → CachingOptimized</text>
+  <rect class="vpc" x="250" y="140" width="500" height="372" rx="12"/><text class="t" x="736" y="160" text-anchor="end" style="fill:#2f6db5">product-vpc 10.0.0.0/16 · eu-north-1a + 1b</text>
+  <rect class="pub" x="262" y="170" width="476" height="76" rx="8"/><text class="s" x="270" y="186">public-a/b  10.0.1.0 · 10.0.3.0 /24 → IGW</text>
+  <rect class="green" x="280" y="194" width="220" height="44" rx="8"/><text class="t" x="390" y="214" text-anchor="middle">ALB product-alb :80</text><text class="s" x="390" y="230" text-anchor="middle">SG alb-sg · TG product-api-tg</text>
+  <rect class="gray" x="560" y="194" width="160" height="44" rx="8"/><text class="t" x="640" y="214" text-anchor="middle">NAT GW (public-a)</text><text class="s" x="640" y="230" text-anchor="middle">+ Elastic IP</text>
+  <path class="a" d="M380 114V194"/><text class="s" x="392" y="132">/api/*  (no cache)</text>
+  <rect class="prv" x="262" y="262" width="476" height="104" rx="8"/><text class="s" x="730" y="278" text-anchor="end">private-app-a/b  10.0.2.0 · 10.0.4.0 /24 → NAT</text>
+  <rect class="blue" x="282" y="290" width="200" height="62" rx="8"/><text class="t" x="382" y="312" text-anchor="middle">Task  eu-north-1a</text><text class="s" x="382" y="330" text-anchor="middle">10.0.2.123:3000 · HEALTHY</text><text class="s" x="382" y="344" text-anchor="middle">ecs-sg · product-api:1</text>
+  <rect class="blue" x="508" y="290" width="200" height="62" rx="8"/><text class="t" x="608" y="312" text-anchor="middle">Task  eu-north-1b</text><text class="s" x="608" y="330" text-anchor="middle">10.0.4.117:3000 · HEALTHY</text><text class="s" x="608" y="344" text-anchor="middle">ecs-sg · product-api:1</text>
+  <path class="a" d="M360 238L382 290"/><path class="a" d="M420 238L600 290"/>
+  <rect class="dbs" x="262" y="382" width="476" height="116" rx="8"/><text class="s" x="730" y="398" text-anchor="end">private-db-a/b  10.0.5.0 · 10.0.6.0 /24 → local only</text>
+  <rect class="purple" x="380" y="414" width="240" height="68" rx="8"/><text class="t" x="500" y="438" text-anchor="middle">RDS product-db  MySQL 8.4</text><text class="s" x="500" y="456" text-anchor="middle">db.t3.micro · 20 GB gp3 · single-AZ · private</text><text class="s" x="500" y="472" text-anchor="middle">DB productsdb · SG rds-sg · TLS</text>
+  <path class="a" d="M382 352L470 414"/><path class="a" d="M608 352L530 414"/>
+  <rect class="red" x="14" y="300" width="214" height="42" rx="8"/><text class="t" x="121" y="318" text-anchor="middle">ECR  product-api:1.0.0</text><text class="s" x="121" y="334" text-anchor="middle">66 MB · scan on push · keep 5</text>
+  <rect class="red" x="14" y="350" width="214" height="42" rx="8"/><text class="t" x="121" y="368" text-anchor="middle">Secrets Manager rds!db-…</text><text class="s" x="121" y="384" text-anchor="middle">managed by RDS · task role reads</text>
+  <rect class="red" x="14" y="400" width="214" height="42" rx="8"/><text class="t" x="121" y="418" text-anchor="middle">CloudWatch /ecs/product-api</text><text class="s" x="121" y="434" text-anchor="middle">retention 7 days</text>
+  <path class="ad" d="M282 322H228"/><text class="s" x="236" y="314">via NAT</text>
+  <text class="s" x="14" y="470">IAM: productApiTaskExecutionRole (pull+logs)</text><text class="s" x="14" y="486">     productApiTaskRole (GetSecretValue, 1 secret)</text>
+</svg>
+<figcaption>Figure 14.1 — As-built architecture with the real values (task IPs shown as at first deployment; replacement tasks get new IPs).</figcaption>
+</figure>
+
+<h2>Resource inventory</h2>
+<table>
+<tr><th>Layer</th><th>Resource</th><th>Value</th></tr>
+<tr><td>Account / region</td><td>role used</td><td>7430…2983 · eu-north-1 · assumed role <code>AccountFullAccessRole</code>, CLI profile <code>default</code></td></tr>
+<tr><td>Network</td><td>VPC, 6 subnets, IGW, NAT + EIP, S3 gateway endpoint</td><td><code>product-vpc</code> 10.0.0.0/16; 2 public, 2 private-app, 2 private-db across eu-north-1a/1b</td></tr>
+<tr><td>Security groups</td><td>3 groups</td><td><code>alb-sg</code> (80/443 from internet) → <code>ecs-sg</code> (3000 from alb-sg) → <code>rds-sg</code> (3306 from ecs-sg)</td></tr>
+<tr><td>Database</td><td>RDS instance + subnet group</td><td><code>product-db</code>, MySQL 8.4.9, <code>db.t3.micro</code>, 20 GB gp3, encrypted, backup 1 day, <b>not public</b>, password managed in Secrets Manager</td></tr>
+<tr><td>Storage / CDN</td><td>S3 + CloudFront + OAC</td><td><code>product-app-7430…2983</code> (private) · distribution <code>ELRKAQU3ZFJM6</code> · OAC <code>product-oac</code></td></tr>
+<tr><td>Registry</td><td>ECR</td><td><code>product-api</code>, tag <code>1.0.0</code> (66.4 MB), lifecycle: keep last 5</td></tr>
+<tr><td>Compute</td><td>ECS cluster / task def / service</td><td><code>product-cluster</code> · <code>product-api:1</code> (0.25 vCPU, 512 MB) · <code>product-api-service</code> desired 2, circuit breaker + rollback</td></tr>
+<tr><td>Load balancing</td><td>ALB, listener, target group</td><td><code>product-alb</code> HTTP:80 → <code>product-api-tg</code> (IP, :3000, <code>/health</code>, deregistration 30 s)</td></tr>
+<tr><td>Identity</td><td>2 IAM roles</td><td>execution role (managed policy) · task role (inline: one secret)</td></tr>
+<tr><td>Logs</td><td>log group</td><td><code>/ecs/product-api</code>, 7-day retention</td></tr>
+</table>
+
+<h2>The order we actually ran things in</h2>
+<figure>
+<svg viewBox="0 0 760 330">
+  <g class="t">
+  <rect class="green" x="10" y="12" width="172" height="62" rx="8"/><text x="96" y="36" text-anchor="middle">1  Network</text><text class="s" x="96" y="54" text-anchor="middle">VPC · subnets · IGW</text><text class="s" x="96" y="67" text-anchor="middle">NAT · routes · 3 SGs</text>
+  <rect class="purple" x="196" y="12" width="172" height="62" rx="8"/><text x="282" y="36" text-anchor="middle">2  RDS</text><text class="s" x="282" y="54" text-anchor="middle">subnet group · instance</text><text class="s" x="282" y="67" text-anchor="middle">managed secret</text>
+  <rect class="orange" x="382" y="12" width="172" height="62" rx="8"/><text x="468" y="36" text-anchor="middle">3  S3 · ECR · IAM</text><text class="s" x="468" y="54" text-anchor="middle">bucket + images · repo</text><text class="s" x="468" y="67" text-anchor="middle">log group · cluster · roles</text>
+  <rect class="blue" x="568" y="12" width="182" height="62" rx="8"/><text x="659" y="36" text-anchor="middle">4  Build and test</text><text class="s" x="659" y="54" text-anchor="middle">docker build · compose test</text><text class="s" x="659" y="67" text-anchor="middle">(API, DB, non-root user OK)</text>
+  <rect class="red" x="10" y="130" width="172" height="62" rx="8"/><text x="96" y="154" text-anchor="middle">5  Push to ECR</text><text class="s" x="96" y="172" text-anchor="middle">1.0.0 · 66 MB</text><text class="s" x="96" y="185" text-anchor="middle">(wincred workaround)</text>
+  <rect class="purple" x="196" y="130" width="172" height="62" rx="8"/><text x="282" y="154" text-anchor="middle">6  Task role + task def</text><text class="s" x="282" y="172" text-anchor="middle">put-role-policy</text><text class="s" x="282" y="185" text-anchor="middle">register revision 1</text>
+  <rect class="blue" x="382" y="130" width="172" height="62" rx="8"/><text x="468" y="154" text-anchor="middle">7  One-off init task</text><text class="s" x="468" y="172" text-anchor="middle">run-task init-db.js</text><text class="s" x="468" y="185" text-anchor="middle">→ db_seeded ✔</text>
+  <rect class="green" x="568" y="130" width="182" height="62" rx="8"/><text x="659" y="154" text-anchor="middle">8  ALB + service</text><text class="s" x="659" y="172" text-anchor="middle">target group · listener</text><text class="s" x="659" y="185" text-anchor="middle">create-service desired=2</text>
+  <rect class="orange" x="10" y="248" width="172" height="62" rx="8"/><text x="96" y="272" text-anchor="middle">9  Frontend upload</text><text class="s" x="96" y="290" text-anchor="middle">vite build → S3</text><text class="s" x="96" y="303" text-anchor="middle">hashed assets + index.html</text>
+  <rect class="purple" x="196" y="248" width="172" height="62" rx="8"/><text x="282" y="272" text-anchor="middle">10  CloudFront</text><text class="s" x="282" y="290" text-anchor="middle">OAC · 2 origins · 2 behaviors</text><text class="s" x="282" y="303" text-anchor="middle">bucket policy · wait Deployed</text>
+  <rect class="green" x="382" y="248" width="172" height="62" rx="8"/><text x="468" y="272" text-anchor="middle">11  Verify</text><text class="s" x="468" y="290" text-anchor="middle">curl 3 paths · browser</text><text class="s" x="468" y="303" text-anchor="middle">stop-task HA test</text>
+  <rect class="gray" x="568" y="248" width="182" height="62" rx="8"/><text x="659" y="272" text-anchor="middle">12  Record</text><text class="s" x="659" y="290" text-anchor="middle">IDs → infra/.deployed.env</text><text class="s" x="659" y="303" text-anchor="middle">docs + this PDF</text>
+  </g>
+  <path class="a" d="M182 43H196M368 43H382M554 43H568"/>
+  <path class="a" d="M659 74V100H96V130" />
+  <path class="a" d="M182 161H196M368 161H382M554 161H568"/>
+  <path class="a" d="M659 192V220H96V248"/>
+  <path class="a" d="M182 279H196M368 279H382M554 279H568"/>
+</svg>
+<figcaption>Figure 14.2 — Twelve steps, in dependency order. Steps 1–3 can overlap while RDS builds (it took several minutes).</figcaption>
+</figure>
+
+<h2>Proof that it works</h2>
+<figure>
+<svg viewBox="0 0 760 210">
+  <rect class="navy" x="6" y="70" width="100" height="56" rx="8"/><text class="t w" x="56" y="94" text-anchor="middle">curl / browser</text><text class="s w" x="56" y="112" text-anchor="middle" style="fill:#c9d3dd !important">GET /api/products</text>
+  <rect class="purple" x="136" y="70" width="120" height="56" rx="8"/><text class="t" x="196" y="92" text-anchor="middle">CloudFront</text><text class="s" x="196" y="110" text-anchor="middle">/api/* → ALB origin</text>
+  <rect class="green" x="286" y="70" width="110" height="56" rx="8"/><text class="t" x="341" y="92" text-anchor="middle">ALB</text><text class="s" x="341" y="110" text-anchor="middle">healthy target</text>
+  <rect class="blue" x="426" y="70" width="120" height="56" rx="8"/><text class="t" x="486" y="92" text-anchor="middle">Node task</text><text class="s" x="486" y="110" text-anchor="middle">pool → SELECT</text>
+  <rect class="purple" x="576" y="70" width="110" height="56" rx="8"/><text class="t" x="631" y="92" text-anchor="middle">RDS MySQL</text><text class="s" x="631" y="110" text-anchor="middle">products (5 rows)</text>
+  <path class="a" d="M106 98H136M256 98H286M396 98H426M546 98H576"/>
+  <path class="ad" d="M631 126V160H56V130"/>
+  <text class="s" x="340" y="178" text-anchor="middle">200 application/json  {"products":[{"id":1,"name":"Wireless Headphones","price":129.99,"imageUrl":"/images/headphones.svg"}, …]}</text>
+  <text class="s" x="380" y="30" text-anchor="middle">Same request, traced through every hop that was running during the verification</text>
+</svg>
+<figcaption>Figure 14.3 — A real request path: browser → CloudFront → ALB → Fargate task → RDS and back.</figcaption>
+</figure>
+
+<table>
+<tr><th>Check</th><th>Command / action</th><th>Result</th></tr>
+<tr><td>Image runs locally as non-root</td><td><code>docker compose up</code>, <code>exec api whoami</code></td><td><code>node</code> · <code>/health/ready</code> → <code>{"status":"ready","db":"up"}</code></td></tr>
+<tr><td>Secret → DB chain in AWS</td><td>one-off <code>run-task … init-db.js</code>, <code>aws logs tail</code></td><td><code>db_credentials_loaded (secrets-manager)</code> then <code>db_seeded</code></td></tr>
+<tr><td>Service stable, 2 tasks</td><td><code>ecs wait services-stable</code></td><td>running 2 / desired 2, tasks in eu-north-1a and 1b</td></tr>
+<tr><td>ALB path</td><td><code>curl http://ALB/health</code>, <code>/api/products</code></td><td><code>{"status":"ok"}</code>, JSON with 5 products</td></tr>
+<tr><td>CloudFront paths</td><td><code>curl -s -o /dev/null -w '%{http_code} %{content_type}'</code></td><td><code>/</code> 200 text/html · <code>/api/products</code> 200 application/json · <code>/images/lamp.svg</code> 200 image/svg+xml</td></tr>
+<tr><td>Bucket is private</td><td>request the regional S3 URL directly</td><td><b>403 Forbidden</b> ✔</td></tr>
+<tr><td>Browser rendering</td><td>open the CloudFront URL, check <code>img.naturalWidth</code></td><td>5 product cards; images load (lazy-loaded ones after scroll)</td></tr>
+<tr><td>High availability</td><td><code>ecs stop-task</code> on one task; 12 calls through CloudFront every 3 s</td><td><b>12 × 200</b>; service back to 2/2 after replacement</td></tr>
+</table>
+
+<figure>
+<svg viewBox="0 0 760 190">
+  <text class="t" x="10" y="22">Stop one task, keep calling the site</text>
+  <g>
+  <rect class="green" x="10" y="40" width="52" height="30" rx="5"/><rect class="green" x="68" y="40" width="52" height="30" rx="5"/><rect class="green" x="126" y="40" width="52" height="30" rx="5"/><rect class="green" x="184" y="40" width="52" height="30" rx="5"/><rect class="green" x="242" y="40" width="52" height="30" rx="5"/><rect class="green" x="300" y="40" width="52" height="30" rx="5"/>
+  <rect class="green" x="358" y="40" width="52" height="30" rx="5"/><rect class="green" x="416" y="40" width="52" height="30" rx="5"/><rect class="green" x="474" y="40" width="52" height="30" rx="5"/><rect class="green" x="532" y="40" width="52" height="30" rx="5"/><rect class="green" x="590" y="40" width="52" height="30" rx="5"/><rect class="green" x="648" y="40" width="52" height="30" rx="5"/>
+  </g>
+  <g class="s" style="font-weight:700"><text x="36" y="60" text-anchor="middle">200</text><text x="94" y="60" text-anchor="middle">200</text><text x="152" y="60" text-anchor="middle">200</text><text x="210" y="60" text-anchor="middle">200</text><text x="268" y="60" text-anchor="middle">200</text><text x="326" y="60" text-anchor="middle">200</text><text x="384" y="60" text-anchor="middle">200</text><text x="442" y="60" text-anchor="middle">200</text><text x="500" y="60" text-anchor="middle">200</text><text x="558" y="60" text-anchor="middle">200</text><text x="616" y="60" text-anchor="middle">200</text><text x="674" y="60" text-anchor="middle">200</text></g>
+  <path class="ao" d="M36 120V76"/><text class="s" x="46" y="124">stop-task (one of the two tasks → DEACTIVATING; ALB drains it)</text>
+  <rect class="blue" x="10" y="140" width="300" height="34" rx="6"/><text class="s" x="160" y="161" text-anchor="middle">the other task keeps serving every request</text>
+  <rect class="orange" x="330" y="140" width="400" height="34" rx="6"/><text class="s" x="530" y="161" text-anchor="middle">service starts a replacement → healthy → running 2 / desired 2</text>
+</svg>
+<figcaption>Figure 14.4 — Availability test: zero failed requests while one of the two tasks was killed.</figcaption>
+</figure>
+
+<h2>Problems we hit — and the fixes</h2>
+<table>
+<tr><th>#</th><th>Symptom</th><th>Cause</th><th>Fix</th></tr>
+<tr><td>1</td><td><code>docker login</code> to ECR → <b>"Error saving credentials … stub received bad data"</b>; push then says <i>no basic auth credentials</i></td><td>Windows credential helper cannot store ECR's very long token</td><td>Write the token into a throw-away Docker config (<code>docker --config &lt;dir&gt; push</code>), delete the file afterwards</td></tr>
+<tr><td>2</td><td>Log group / path arguments starting with <code>/</code> mangled</td><td>Git Bash converts <code>/ecs/…</code> to a Windows path</td><td><code>export MSYS_NO_PATHCONV=1</code></td></tr>
+<tr><td>3</td><td><code>xargs aws ecs describe-tasks</code> → <i>Unexpected number of separators</i></td><td><code>aws.exe</code> prints <code>\r\n</code> and tab-separated ARNs</td><td><code>… | tr '\t' '\n' | tr -d '\r' | xargs …</code></td></tr>
+<tr><td>4</td><td><code>create-service-linked-role ecs</code> → <i>name has been taken</i></td><td>Role already existed in the account — harmless</td><td>Ignore; it only needs to exist</td></tr>
+<tr><td>5</td><td>Direct S3 check returned <b>307</b> instead of 403</td><td>Global S3 endpoint redirects to the bucket's region</td><td>Test against <code>bucket.s3.&lt;region&gt;.amazonaws.com</code> → 403</td></tr>
+<tr><td>6</td><td>First browser screenshot: grey boxes where images belong</td><td>Screenshot taken before lazy-loaded images finished</td><td>Re-check <code>img.complete / naturalWidth</code>, reload screenshot</td></tr>
+<tr><td>7</td><td>Docs said MySQL 8.0</td><td>RDS default engine is now 8.4.x</td><td>App works on both; docs updated</td></tr>
+</table>
+
+<div class="box why"><b>What this run proved about the design</b> Image pull through the NAT, the task role reading the secret, TLS to RDS with the CA bundle baked into the image, the ALB health check that ignores the DB, graceful 2-AZ failover, and path-based routing in CloudFront — all worked on the first attempt with the files in this repository. The only failures were Windows tooling quirks, not AWS design.</div>
+
+<h2>One-page runbook (reproduce or redeploy)</h2>
+<pre><span class="c"># 0  once per terminal (Git Bash)</span>
+export MSYS_NO_PATHCONV=1 AWS_REGION=eu-north-1 AWS_DEFAULT_REGION=eu-north-1 &amp;&amp; source infra/.deployed.env
+<span class="c"># 1  ship a new backend version</span>
+docker build -t product-api:1.0.1 backend &amp;&amp; docker tag product-api:1.0.1 $ECR_URI:1.0.1
+<span class="c">#    push with the throw-away docker config (see chapter 14, problem 1), then:</span>
+export IMAGE_URI=$ECR_URI:1.0.1 &amp;&amp; bash scripts/render-task-def.sh
+aws ecs register-task-definition --cli-input-json file://infra/task-definition.rendered.json
+aws ecs update-service --cluster product-cluster --service product-api-service --task-definition product-api
+aws ecs wait services-stable --cluster product-cluster --services product-api-service
+<span class="c"># 2  ship a new frontend</span>
+npm --prefix frontend run build
+aws s3 sync frontend/dist s3://$BUCKET --delete --exclude "images/*" --exclude "index.html" --cache-control "public, max-age=31536000, immutable"
+aws s3 cp frontend/dist/index.html s3://$BUCKET/index.html --cache-control no-cache
+aws cloudfront create-invalidation --distribution-id $CF_ID --paths "/index.html"
+<span class="c"># 3  look at it</span>
+aws logs tail /ecs/product-api --follow --since 10m
+curl -s https://$CF_DOMAIN/api/products | head -c 300</pre>
+
+<h2>Cost status and teardown for this exact stack</h2>
+<div class="box warn"><b>Running now</b> The stack is live and billing roughly <b>$2–3 per day</b> (NAT Gateway, 2 Fargate tasks, ALB, public IPv4, RDS beyond any free allowance). No budget or CloudWatch/SNS alarms were created. To stop the bill, delete in the order below (all IDs come from <code>infra/.deployed.env</code>).</div>
+<pre>source infra/.deployed.env
+aws cloudfront get-distribution-config --id $CF_ID <span class="c"># → set Enabled=false, update-distribution with the ETag, wait Deployed, then delete-distribution</span>
+aws ecs update-service --cluster product-cluster --service product-api-service --desired-count 0
+aws ecs delete-service --cluster product-cluster --service product-api-service --force
+aws ecs delete-cluster --cluster product-cluster
+aws elbv2 delete-load-balancer --load-balancer-arn $ALB_ARN          <span class="c"># wait ~1 min</span>
+aws elbv2 delete-target-group --target-group-arn $TG_ARN
+aws rds delete-db-instance --db-instance-identifier product-db --skip-final-snapshot --delete-automated-backups
+aws rds wait db-instance-deleted --db-instance-identifier product-db
+aws rds delete-db-subnet-group --db-subnet-group-name product-db-subnet-group
+aws s3 rm s3://$BUCKET --recursive &amp;&amp; aws s3api delete-bucket --bucket $BUCKET
+aws ecr delete-repository --repository-name product-api --force
+aws logs delete-log-group --log-group-name /ecs/product-api
+aws cloudfront delete-origin-access-control --id $OAC_ID --if-match &lt;etag&gt;
+aws iam delete-role-policy --role-name productApiTaskRole --policy-name read-db-secret &amp;&amp; aws iam delete-role --role-name productApiTaskRole
+aws iam detach-role-policy --role-name productApiTaskExecutionRole --policy-arn arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy
+aws iam delete-role --role-name productApiTaskExecutionRole
+aws ec2 delete-nat-gateway --nat-gateway-id $NAT_ID   <span class="c"># wait until Deleted, then:</span>
+aws ec2 release-address --allocation-id $EIP_ID
+aws ec2 delete-vpc-endpoints --vpc-endpoint-ids $VPCE_ID
+<span class="c"># then delete the 3 security groups (rds-sg, ecs-sg, alb-sg), the 6 subnets, the route tables, detach+delete the IGW, and the VPC</span></pre>
+
+</body>
+</html>

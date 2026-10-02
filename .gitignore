@@ -1,0 +1,10 @@
+node_modules/
+dist/
+.env
+*.log
+.DS_Store
+infra/task-definition.rendered.json
+infra/task-role-policy.rendered.json
+infra/.deployed.env
+infra/cloudfront-config.rendered.json
+infra/bucket-policy.rendered.json
